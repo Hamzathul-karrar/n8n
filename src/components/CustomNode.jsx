@@ -1,12 +1,25 @@
+import { useState } from 'react';
 import { Handle } from 'reactflow';
 import { Card, CardContent, Typography, IconButton } from '@mui/material';
 import { Delete } from '@mui/icons-material';
 import PropTypes from 'prop-types';
 
-export default function CustomNode({ data, id }) {
+export default function CustomNode({ data, id, edges }) {
+  const [message, setMessage] = useState('');
+
   const handleDelete = () => {
-    if (data.onDelete) {
-      data.onDelete(id);
+    if (data.onDelete) data.onDelete(id);
+  };
+
+  const handleSend = () => {
+    // Check if this node is connected to another node
+    const isConnected = edges.some(edge => edge.source === id || edge.target === id);
+
+    if (isConnected && data.onExecute) {
+      data.onExecute(message);
+      setMessage('');
+    } else {
+      console.warn(`${data.label} is not connected to any node!`);
     }
   };
 
@@ -14,11 +27,12 @@ export default function CustomNode({ data, id }) {
     <Card 
       variant="outlined" 
       style={{ 
-        minWidth: 200,
+        minWidth: 250,
         background: '#2a2a2a',
         border: '1px solid #444',
         borderRadius: '8px',
-        color: '#fff'
+        color: '#fff',
+        padding: 8
       }}
     >
       <Handle 
@@ -29,7 +43,7 @@ export default function CustomNode({ data, id }) {
       
       <CardContent>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h6" component="div" style={{ color: '#fff' }}>
+          <Typography variant="h6" style={{ color: '#fff' }}>
             {data.label}
           </Typography>
           <IconButton 
@@ -40,10 +54,13 @@ export default function CustomNode({ data, id }) {
             <Delete fontSize="small" />
           </IconButton>
         </div>
-        
-        <Typography style={{ color: '#bbb', fontSize: '0.875rem' }}>
-          Type: {data.type}
-        </Typography>
+
+        {/* Show type only if not a chatbot */}
+        {data.type !== 'Chatbot' && (
+          <Typography style={{ color: '#bbb', fontSize: '0.875rem' }}>
+            Type: {data.type}
+          </Typography>
+        )}
       </CardContent>
 
       <Handle 
@@ -60,6 +77,8 @@ CustomNode.propTypes = {
     label: PropTypes.string.isRequired,
     type: PropTypes.string.isRequired,
     onDelete: PropTypes.func.isRequired,
+    onExecute: PropTypes.func, // Execute function for AI scraper
   }).isRequired,
   id: PropTypes.string.isRequired,
-}; 
+  edges: PropTypes.array.isRequired, // New: List of connections
+};

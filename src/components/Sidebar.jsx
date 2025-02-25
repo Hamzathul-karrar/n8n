@@ -7,16 +7,18 @@ import {
   Storage,
   Functions,
   CloudQueue,
+  Chat,
 } from '@mui/icons-material';
 
 const nodeTypes = [
   { type: 'HTTP Request', icon: Http },
   { type: 'Schedule Trigger', icon: Schedule },
-  { type: 'JavaScript', icon: Code },
+  { type: 'AiScraper', icon: Code },
   { type: 'Email', icon: Email },
   { type: 'Database', icon: Storage },
   { type: 'Function', icon: Functions },
   { type: 'API', icon: CloudQueue },
+  { type: 'Chatbot Trigger', icon: Chat },
 ];
 
 export default function Sidebar() {

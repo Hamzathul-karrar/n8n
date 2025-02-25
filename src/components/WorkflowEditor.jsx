@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import ReactFlow, {
   addEdge,
   Background,
@@ -84,9 +84,33 @@ export default function WorkflowEditor() {
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
 
+  const executeAiScraper = async () => {
+    const businessType = prompt("Enter business type:");
+    const location = prompt("Enter location:");
+
+    if (!businessType || !location) {
+      alert("Both fields are required!");
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:8080/api/scrape?businessType=${businessType}&location=${location}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        mode: 'cors',
+      });
+
+      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+
+      const data = await response.text();
+      console.log('Scraped Data:', data);
+    } catch (error) {
+      console.error('Scraper Error:', error);
+    }
+  };
+
   const onConnect = useCallback(
     (params) => {
-      // Add edge with a smooth step type
       const edge = {
         ...params,
         type: 'smoothstep',
@@ -108,9 +132,9 @@ export default function WorkflowEditor() {
     setEdges((edges) => edges.filter((edge) => edge.id !== edgeId));
   }, [setEdges]);
 
-  const edgeTypes = {
+  const edgeTypes = useMemo(() => ({
     default: (props) => <EdgeWithDelete {...props} onEdgeDelete={onEdgeDelete} />,
-  };
+  }), [onEdgeDelete]);
 
   const onDragOver = useCallback((event) => {
     event.preventDefault();
@@ -135,8 +159,9 @@ export default function WorkflowEditor() {
         position,
         data: { 
           label: type, 
-          type,
+          type: type === "Chatbot Trigger" ? "Chatbot" : type,
           onDelete: onNodeDelete,
+          onExecute: type === 'AiScraper' ? executeAiScraper : null, 
         },
       };
 
@@ -145,6 +170,46 @@ export default function WorkflowEditor() {
     [reactFlowInstance, setNodes, onNodeDelete]
   );
 
+  const runWorkflow = () => {
+    console.log("Nodes in Workflow:", nodes);
+    console.log("Edges in Workflow:", edges);
+  
+    let chatbotTriggered = false;
+    let aiScraperConnected = false;
+  
+    // Find Chatbot node first
+    const chatbotNode = nodes.find((node) => node.data.type.toLowerCase().includes("chatbot"));
+  
+    if (!chatbotNode) {
+      console.warn("Chatbot node is not present, skipping execution.");
+      return;
+    }
+  
+    chatbotTriggered = true;
+  
+    // Check if Chatbot is DIRECTLY connected to AiScraper
+    edges.forEach((edge) => {
+      if (
+        (edge.source === chatbotNode.id || edge.target === chatbotNode.id) &&
+        nodes.some((node) => (node.id === edge.source || node.id === edge.target) && node.data.type === "AiScraper")
+      ) {
+        aiScraperConnected = true;
+      }
+    });
+  
+    if (!aiScraperConnected) {
+      console.warn("Chatbot is not connected to AI Scraper!");
+      return;
+    }
+  
+    // Execute AI Scraper
+    nodes.forEach((node) => {
+      if (node.data.type === "AiScraper" && node.data.onExecute) {
+        node.data.onExecute();
+      }
+    });
+  };
+  
   return (
     <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <AppBar position="static" color="default" elevation={1}>
@@ -159,7 +224,7 @@ export default function WorkflowEditor() {
             <Button startIcon={<Save />} variant="outlined">
               Save
             </Button>
-            <Button startIcon={<PlayArrow />} variant="contained" color="primary">
+            <Button startIcon={<PlayArrow />} variant="contained" color="primary" onClick={runWorkflow}>
               Run
             </Button>
           </Stack>
@@ -193,4 +258,4 @@ export default function WorkflowEditor() {
       </div>
     </div>
   );
-} 
+}
