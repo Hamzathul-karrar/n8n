@@ -10,13 +10,41 @@ import {
 } from '@mui/icons-material';
 
 const nodeTypes = [
-  { type: 'HTTP Request', icon: Http },
-  { type: 'Schedule Trigger', icon: Schedule },
-  { type: 'JavaScript', icon: Code },
-  { type: 'Email', icon: Email },
-  { type: 'Database', icon: Storage },
-  { type: 'Function', icon: Functions },
-  { type: 'API', icon: CloudQueue },
+  { 
+    type: 'HTTP Request', 
+    icon: Http,
+    description: 'Make HTTP requests to external APIs and services'
+  },
+  { 
+    type: 'Schedule Trigger', 
+    icon: Schedule,
+    description: 'Trigger workflows at scheduled intervals'
+  },
+  { 
+    type: 'JavaScript', 
+    icon: Code,
+    description: 'Execute custom JavaScript code'
+  },
+  { 
+    type: 'Email', 
+    icon: Email,
+    description: 'Send and process email communications'
+  },
+  { 
+    type: 'Database', 
+    icon: Storage,
+    description: 'Interact with databases and storage systems'
+  },
+  { 
+    type: 'Function', 
+    icon: Functions,
+    description: 'Create custom function nodes for specific tasks'
+  },
+  { 
+    type: 'API', 
+    icon: CloudQueue,
+    description: 'Connect and integrate with external APIs'
+  },
 ];
 
 export default function Sidebar() {
@@ -61,7 +89,7 @@ export default function Sidebar() {
               onDragStart={(event) => onDragStart(event, node.type)}
               sx={{
                 cursor: 'grab',
-                margin: '8px',
+                margin: '8px 0px',
                 border: '1px solid #444',
                 borderRadius: '4px',
                 color: '#fff',
@@ -76,9 +104,14 @@ export default function Sidebar() {
               </ListItemIcon>
               <ListItemText 
                 primary={node.type} 
+                secondary={node.description}
                 sx={{ 
                   '& .MuiListItemText-primary': { 
                     color: '#fff'
+                  },
+                  '& .MuiListItemText-secondary': {
+                    color: '#aaa',
+                    fontSize: '0.8rem'
                   }
                 }} 
               />

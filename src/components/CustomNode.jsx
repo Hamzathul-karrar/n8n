@@ -40,10 +40,6 @@ export default function CustomNode({ data, id }) {
             <Delete fontSize="small" />
           </IconButton>
         </div>
-        
-        <Typography style={{ color: '#bbb', fontSize: '0.875rem' }}>
-          Type: {data.type}
-        </Typography>
       </CardContent>
 
       <Handle 
