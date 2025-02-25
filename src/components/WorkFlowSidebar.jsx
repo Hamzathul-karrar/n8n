@@ -1,4 +1,4 @@
-import { Paper, List, ListItem, ListItemText, ListItemIcon, Typography } from '@mui/material';
+import { Paper, List, ListItem, ListItemText, ListItemIcon, Typography, TextField } from '@mui/material';
 import {
   Http,
   Schedule,
@@ -8,6 +8,7 @@ import {
   Functions,
   CloudQueue,
 } from '@mui/icons-material';
+import { useState } from 'react';
 
 const nodeTypes = [
   { 
@@ -48,10 +49,17 @@ const nodeTypes = [
 ];
 
 export default function Sidebar() {
+  const [searchQuery, setSearchQuery] = useState('');
+  
   const onDragStart = (event, nodeType) => {
     event.dataTransfer.setData('application/reactflow', nodeType);
     event.dataTransfer.effectAllowed = 'move';
   };
+
+  const filteredNodes = nodeTypes.filter(node =>
+    node.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    node.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <Paper 
@@ -77,9 +85,39 @@ export default function Sidebar() {
       >
         Nodes
       </Typography>
+
+      <TextField
+        fullWidth
+        variant="outlined"
+        placeholder="Search nodes..."
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        sx={{
+          margin: '16px',
+          width: 'calc(100% - 32px)',
+          '& .MuiOutlinedInput-root': {
+            color: '#fff',
+            '& fieldset': {
+              borderColor: '#444',
+            },
+            '&:hover fieldset': {
+              borderColor: '#ff6d5a',
+            },
+            '&.Mui-focused fieldset': {
+              borderColor: '#ff6d5a',
+            },
+          },
+          '& .MuiOutlinedInput-input': {
+            '&::placeholder': {
+              color: '#aaa',
+              opacity: 1,
+            },
+          },
+        }}
+      />
       
       <List>
-        {nodeTypes.map((node) => {
+        {filteredNodes.map((node) => {
           const Icon = node.icon;
           return (
             <ListItem
