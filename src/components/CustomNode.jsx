@@ -54,13 +54,10 @@ export default function CustomNode({ data, id, edges }) {
             <Delete fontSize="small" />
           </IconButton>
         </div>
-
-        {/* Show type only if not a chatbot */}
-        {data.type !== 'Chatbot' && (
-          <Typography style={{ color: '#bbb', fontSize: '0.875rem' }}>
-            Type: {data.type}
-          </Typography>
-        )}
+        
+        <Typography style={{ color: '#bbb', fontSize: '0.875rem' }}>
+          Type: {data.type}
+        </Typography>
       </CardContent>
 
       <Handle 
