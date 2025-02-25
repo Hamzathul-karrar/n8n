@@ -1,0 +1,49 @@
+/* Reset default styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    line-height: 1.6;
+    background: #f4f4f4;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+/* Remove any duplicate styles from other files */
+
+/* Main layout */
+.app-container {
+    display: flex;
+    height: 100vh;
+}
+
+.react-flow__node {
+    width: auto !important;
+}
+
+.react-flow__handle {
+    width: 8px !important;
+    height: 8px !important;
+}
+
+.edge-delete-button {
+    background: #ff6d5a;
+    border: none;
+    border-radius: 50%;
+    color: white;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.edge-delete-button:hover {
+    background: #ff8d7a;
+}
+  
