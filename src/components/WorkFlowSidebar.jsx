@@ -17,14 +17,14 @@ const nodeTypes = [
     description: 'Make HTTP requests to external APIs and services'
   },
   { 
-    type: 'Schedule Trigger', 
+    type: 'Click Trigger', 
     icon: Schedule,
-    description: 'Trigger workflows at scheduled intervals'
+    description: 'Trigger workflows with a test button click'
   },
   { 
-    type: 'JavaScript', 
+    type: 'Code', 
     icon: Code,
-    description: 'Execute custom JavaScript code'
+    description: 'Execute custom JavaScript Code'
   },
   { 
     type: 'Email', 
@@ -42,7 +42,7 @@ const nodeTypes = [
     description: 'Create custom function nodes for specific tasks'
   },
   { 
-    type: 'API', 
+    type: 'Chat Bot', 
     icon: CloudQueue,
     description: 'Connect and integrate with external APIs'
   },

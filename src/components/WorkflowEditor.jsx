@@ -16,6 +16,7 @@ import 'reactflow/dist/style.css';
 import CustomNode from './CustomNode';
 import Sidebar from './WorkFlowSidebar';
 import { useParams } from 'react-router-dom';
+import CustomEdge from './CustomEdge';
 
 const nodeTypes = {
   custom: CustomNode,
@@ -115,17 +116,21 @@ export default function WorkflowEditor() {
     }
   };
 
-  const onConnect = useCallback(
-    (params) => {
-      const edge = {
+  const onConnect = useCallback((params) => {
+    setEdges((eds) =>
+      addEdge({
         ...params,
-        type: 'smoothstep',
+        type: 'custom',
         animated: true,
-      };
-      setEdges((eds) => addEdge(edge, eds));
-    },
-    [setEdges]
-  );
+        style: { stroke: '#ff6d5a', strokeWidth: 2 },
+        data: {
+          onDelete: (edgeId) => {
+            setEdges((edges) => edges.filter((edge) => edge.id !== edgeId));
+          },
+        },
+      }, eds)
+    );
+  }, [setEdges]);
 
   const onNodeDelete = useCallback((nodeId) => {
     setNodes((nodes) => nodes.filter((node) => node.id !== nodeId));
@@ -140,6 +145,7 @@ export default function WorkflowEditor() {
 
   const edgeTypes = useMemo(() => ({
     default: (props) => <EdgeWithDelete {...props} onEdgeDelete={onEdgeDelete} />,
+    custom: CustomEdge,
   }), [onEdgeDelete]);
 
   const onDragOver = useCallback((event) => {
