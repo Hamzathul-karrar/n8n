@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import ReactFlow, {
   addEdge,
   Background,
@@ -82,13 +82,16 @@ EdgeWithDelete.propTypes = {
 
 export default function WorkflowEditor() {
   const { id } = useParams();
-  const workflow = useState(() => {
-    const savedWorkflows = JSON.parse(localStorage.getItem('workflows') || '[]');
-    return savedWorkflows.find(w => w.id === parseInt(id)) || null;
-  })[0];
-  const [nodes, setNodes, onNodesChange] = useNodesState(workflow?.nodes || initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+
+  const onNodeDelete = useCallback((nodeId) => {
+    setNodes((nodes) => nodes.filter((node) => node.id !== nodeId));
+    setEdges((edges) => edges.filter(
+      (edge) => edge.source !== nodeId && edge.target !== nodeId
+    ));
+  }, [setNodes, setEdges]);
 
   const executeAiScraper = async () => {
     const businessType = prompt("Enter business type:");
@@ -115,6 +118,62 @@ export default function WorkflowEditor() {
     }
   };
 
+  // Load workflow after function definitions
+  const [workflow] = useState(() => {
+    const savedWorkflows = JSON.parse(localStorage.getItem('workflows') || '[]');
+    const savedWorkflow = savedWorkflows.find(w => w.id === parseInt(id)) || null;
+    
+    // Reattach callbacks to saved nodes if they exist
+    if (savedWorkflow?.nodes) {
+      savedWorkflow.nodes = savedWorkflow.nodes.map(node => ({
+        ...node,
+        data: {
+          ...node.data,
+          onDelete: onNodeDelete,
+          onExecute: node.data.type === 'AiScraper' ? executeAiScraper : null,
+        }
+      }));
+    }
+    
+    return savedWorkflow;
+  });
+
+  // Update nodes and edges with saved workflow data
+  useEffect(() => {
+    if (workflow?.nodes) {
+      setNodes(workflow.nodes);
+    }
+    if (workflow?.edges) {
+      setEdges(workflow.edges);
+    }
+  }, [workflow, setNodes, setEdges]);
+
+  const saveWorkflow = useCallback(() => {
+    if (!workflow?.id) {
+      console.warn("No workflow ID found");
+      return;
+    }
+
+    const savedWorkflows = JSON.parse(localStorage.getItem('workflows') || '[]');
+    const workflowIndex = savedWorkflows.findIndex(w => w.id === workflow.id);
+
+    const updatedWorkflow = {
+      ...workflow,
+      nodes: nodes,
+      edges: edges,
+      lastModified: new Date().toISOString()
+    };
+
+    if (workflowIndex !== -1) {
+      savedWorkflows[workflowIndex] = updatedWorkflow;
+    } else {
+      savedWorkflows.push(updatedWorkflow);
+    }
+
+    localStorage.setItem('workflows', JSON.stringify(savedWorkflows));
+    console.log('Workflow saved successfully');
+  }, [workflow, nodes, edges]);
+
   const onConnect = useCallback(
     (params) => {
       const edge = {
@@ -126,13 +185,6 @@ export default function WorkflowEditor() {
     },
     [setEdges]
   );
-
-  const onNodeDelete = useCallback((nodeId) => {
-    setNodes((nodes) => nodes.filter((node) => node.id !== nodeId));
-    setEdges((edges) => edges.filter(
-      (edge) => edge.source !== nodeId && edge.target !== nodeId
-    ));
-  }, [setNodes, setEdges]);
 
   const onEdgeDelete = useCallback((edgeId) => {
     setEdges((edges) => edges.filter((edge) => edge.id !== edgeId));
@@ -242,6 +294,7 @@ export default function WorkflowEditor() {
             <Button 
               startIcon={<Save />} 
               variant="outlined"
+              onClick={saveWorkflow}
               sx={{ color: '#ff6d5a', borderColor: '#ff6d5a' }}
             >
               Save
