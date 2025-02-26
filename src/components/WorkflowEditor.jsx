@@ -6,12 +6,11 @@ import ReactFlow, {
   MiniMap,
   useNodesState,
   useEdgesState,
-  BaseEdge,
-  getSmoothStepPath,
+ 
 } from 'reactflow';
 import { AppBar, Toolbar, Typography, Button, Stack } from '@mui/material';
-import { PlayArrow, Save, WorkspacesOutlined, Close } from '@mui/icons-material';
-import PropTypes from 'prop-types';
+import { PlayArrow, Save, WorkspacesOutlined } from '@mui/icons-material';
+// import PropTypes from 'prop-types';
 import 'reactflow/dist/style.css';
 import CustomNode from './CustomNode';
 import Sidebar from './WorkFlowSidebar';
@@ -24,62 +23,6 @@ const nodeTypes = {
 
 const initialNodes = [];
 const initialEdges = [];
-
-const EdgeWithDelete = ({
-  id,
-  sourceX,
-  sourceY,
-  targetX,
-  targetY,
-  style = {},
-  markerEnd,
-  sourcePosition,
-  targetPosition,
-  onEdgeDelete,
-}) => {
-  const [edgePath, labelX, labelY] = getSmoothStepPath({
-    sourceX,
-    sourceY,
-    sourcePosition,
-    targetX,
-    targetY,
-    targetPosition,
-  });
-
-  return (
-    <>
-      <BaseEdge path={edgePath} markerEnd={markerEnd} style={style} />
-      <button
-        className="edge-delete-button"
-        onClick={(event) => {
-          event.stopPropagation();
-          onEdgeDelete(id);
-        }}
-        style={{
-          position: 'absolute',
-          left: labelX,
-          top: labelY,
-          transform: 'translate(-50%, -50%)',
-        }}
-      >
-        <Close fontSize="small" />
-      </button>
-    </>
-  );
-};
-
-EdgeWithDelete.propTypes = {
-  id: PropTypes.string.isRequired,
-  sourceX: PropTypes.number.isRequired,
-  sourceY: PropTypes.number.isRequired,
-  targetX: PropTypes.number.isRequired,
-  targetY: PropTypes.number.isRequired,
-  style: PropTypes.object,
-  markerEnd: PropTypes.string,
-  sourcePosition: PropTypes.string.isRequired,
-  targetPosition: PropTypes.string.isRequired,
-  onEdgeDelete: PropTypes.func.isRequired,
-};
 
 export default function WorkflowEditor() {
   const { id } = useParams();
@@ -181,20 +124,14 @@ export default function WorkflowEditor() {
         ...params,
         type: 'custom',
         animated: true,
-        style: { stroke: '#ff6d5a', strokeWidth: 2 },
-        data: {
-          onDelete: (edgeId) => {
-            setEdges((edges) => edges.filter((edge) => edge.id !== edgeId));
-          },
-        },
+        style: { stroke: '#ff6d5a', strokeWidth: 2 }
       }, eds)
     );
   }, [setEdges]);
 
   const edgeTypes = useMemo(() => ({
-    default: (props) => <EdgeWithDelete {...props} onEdgeDelete={onNodeDelete} />,
     custom: CustomEdge,
-  }), [onNodeDelete]);
+  }), []);
 
   const onDragOver = useCallback((event) => {
     event.preventDefault();

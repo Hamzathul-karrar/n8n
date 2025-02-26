@@ -1,12 +1,7 @@
-import { useState, useCallback } from 'react';
-import { BaseEdge, EdgeLabelRenderer, getBezierPath } from 'reactflow';
-import { IconButton } from '@mui/material';
-import { Delete } from '@mui/icons-material';
+import { BaseEdge, getBezierPath } from 'reactflow';
 import PropTypes from 'prop-types';
-import './CustomEdge.css';
 
 export default function CustomEdge({
-  id,
   sourceX,
   sourceY,
   targetX,
@@ -15,11 +10,8 @@ export default function CustomEdge({
   targetPosition,
   style = {},
   markerEnd,
-  data,
 }) {
-  const [isHovered, setIsHovered] = useState(false);
-
-  const [edgePath, labelX, labelY] = getBezierPath({
+  const [edgePath] = getBezierPath({
     sourceX,
     sourceY,
     sourcePosition,
@@ -28,45 +20,8 @@ export default function CustomEdge({
     targetPosition,
   });
 
-  const onEdgeClick = useCallback(
-    (evt) => {
-      evt.stopPropagation();
-      if (data?.onDelete) {
-        data.onDelete(id);
-      }
-    },
-    [id, data]
-  );
-
   return (
-    <>
-      <g
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
-        <BaseEdge path={edgePath} markerEnd={markerEnd} style={style} />
-      </g>
-      {isHovered && (
-        <EdgeLabelRenderer>
-          <div
-            style={{
-              position: 'absolute',
-              transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
-              pointerEvents: 'all',
-            }}
-            className="edge-delete-button show"
-          >
-            <IconButton
-              size="small"
-              onClick={onEdgeClick}
-              className="edge-button"
-            >
-              <Delete fontSize="small" />
-            </IconButton>
-          </div>
-        </EdgeLabelRenderer>
-      )}
-    </>
+    <BaseEdge path={edgePath} markerEnd={markerEnd} style={style} />
   );
 }
 
@@ -80,7 +35,4 @@ CustomEdge.propTypes = {
   targetPosition: PropTypes.string.isRequired,
   style: PropTypes.object,
   markerEnd: PropTypes.string,
-  data: PropTypes.shape({
-    onDelete: PropTypes.func,
-  }),
 };
