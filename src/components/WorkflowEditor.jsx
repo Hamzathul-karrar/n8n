@@ -15,7 +15,7 @@ import PropTypes from 'prop-types';
 import 'reactflow/dist/style.css';
 import CustomNode from './CustomNode';
 import Sidebar from './WorkFlowSidebar';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import CustomEdge from './CustomEdge';
 
 const nodeTypes = {
@@ -83,6 +83,7 @@ EdgeWithDelete.propTypes = {
 
 export default function WorkflowEditor() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
@@ -267,6 +268,10 @@ export default function WorkflowEditor() {
     });
   });
 
+  const handleWorkspaceClick = useCallback(() => {
+    navigate('/');
+  }, [navigate]);
+
   return (
     <div style={{
       width: '100%',
@@ -289,6 +294,7 @@ export default function WorkflowEditor() {
             <Button 
               startIcon={<WorkspacesOutlined />} 
               variant="outlined" 
+              onClick={handleWorkspaceClick}
               sx={{ color: '#ff6d5a', borderColor: '#ff6d5a' }}
             >
               Workspace
