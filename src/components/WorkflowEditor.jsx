@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import ReactFlow, {
   addEdge,
   Background,
@@ -6,16 +6,16 @@ import ReactFlow, {
   MiniMap,
   useNodesState,
   useEdgesState,
-  BaseEdge,
-  getSmoothStepPath,
+ 
 } from 'reactflow';
 import { AppBar, Toolbar, Typography, Button, Stack } from '@mui/material';
-import { PlayArrow, Save, WorkspacesOutlined, Close } from '@mui/icons-material';
-import PropTypes from 'prop-types';
+import { PlayArrow, Save, WorkspacesOutlined } from '@mui/icons-material';
+// import PropTypes from 'prop-types';
 import 'reactflow/dist/style.css';
 import CustomNode from './CustomNode';
 import Sidebar from './WorkFlowSidebar';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+import CustomEdge from './CustomEdge';
 
 const nodeTypes = {
   custom: CustomNode,
@@ -24,71 +24,19 @@ const nodeTypes = {
 const initialNodes = [];
 const initialEdges = [];
 
-const EdgeWithDelete = ({
-  id,
-  sourceX,
-  sourceY,
-  targetX,
-  targetY,
-  style = {},
-  markerEnd,
-  sourcePosition,
-  targetPosition,
-  onEdgeDelete,
-}) => {
-  const [edgePath, labelX, labelY] = getSmoothStepPath({
-    sourceX,
-    sourceY,
-    sourcePosition,
-    targetX,
-    targetY,
-    targetPosition,
-  });
-
-  return (
-    <>
-      <BaseEdge path={edgePath} markerEnd={markerEnd} style={style} />
-      <button
-        className="edge-delete-button"
-        onClick={(event) => {
-          event.stopPropagation();
-          onEdgeDelete(id);
-        }}
-        style={{
-          position: 'absolute',
-          left: labelX,
-          top: labelY,
-          transform: 'translate(-50%, -50%)',
-        }}
-      >
-        <Close fontSize="small" />
-      </button>
-    </>
-  );
-};
-
-EdgeWithDelete.propTypes = {
-  id: PropTypes.string.isRequired,
-  sourceX: PropTypes.number.isRequired,
-  sourceY: PropTypes.number.isRequired,
-  targetX: PropTypes.number.isRequired,
-  targetY: PropTypes.number.isRequired,
-  style: PropTypes.object,
-  markerEnd: PropTypes.string,
-  sourcePosition: PropTypes.string.isRequired,
-  targetPosition: PropTypes.string.isRequired,
-  onEdgeDelete: PropTypes.func.isRequired,
-};
-
 export default function WorkflowEditor() {
   const { id } = useParams();
-  const workflow = useState(() => {
-    const savedWorkflows = JSON.parse(localStorage.getItem('workflows') || '[]');
-    return savedWorkflows.find(w => w.id === parseInt(id)) || null;
-  })[0];
-  const [nodes, setNodes, onNodesChange] = useNodesState(workflow?.nodes || initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const navigate = useNavigate();
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+
+  const onNodeDelete = useCallback((nodeId) => {
+    setNodes((nodes) => nodes.filter((node) => node.id !== nodeId));
+    setEdges((edges) => edges.filter(
+      (edge) => edge.source !== nodeId && edge.target !== nodeId
+    ));
+  }, [setNodes, setEdges]);
 
   const executeAiScraper = async () => {
     console.log("Executing AI Scraper..."); // Debug log
@@ -117,37 +65,76 @@ export default function WorkflowEditor() {
     }
   };
 
-  const onConnect = useCallback((params) => {
-    console.log("New Connection:", params);
+  // Load workflow after function definitions
+  const [workflow] = useState(() => {
+    const savedWorkflows = JSON.parse(localStorage.getItem('workflows') || '[]');
+    const savedWorkflow = savedWorkflows.find(w => w.id === parseInt(id)) || null;
     
-    const edge = {
-      ...params,
-      type: 'smoothstep',
-      animated: true,
+    // Reattach callbacks to saved nodes if they exist
+    if (savedWorkflow?.nodes) {
+      savedWorkflow.nodes = savedWorkflow.nodes.map(node => ({
+        ...node,
+        data: {
+          ...node.data,
+          onDelete: onNodeDelete,
+          onExecute: node.data.type === 'AiScraper' ? executeAiScraper : null,
+        }
+      }));
+    }
+    
+    return savedWorkflow;
+  });
+
+  // Update nodes and edges with saved workflow data
+  useEffect(() => {
+    if (workflow?.nodes) {
+      setNodes(workflow.nodes);
+    }
+    if (workflow?.edges) {
+      setEdges(workflow.edges);
+    }
+  }, [workflow, setNodes, setEdges]);
+
+  const saveWorkflow = useCallback(() => {
+    if (!workflow?.id) {
+      console.warn("No workflow ID found");
+      return;
+    }
+
+    const savedWorkflows = JSON.parse(localStorage.getItem('workflows') || '[]');
+    const workflowIndex = savedWorkflows.findIndex(w => w.id === workflow.id);
+
+    const updatedWorkflow = {
+      ...workflow,
+      nodes: nodes,
+      edges: edges,
+      lastModified: new Date().toISOString()
     };
-    
-    setEdges((eds) => {
-      const updatedEdges = addEdge(edge, eds);
-      console.log("Updated Edges:", updatedEdges);
-      return updatedEdges;
-    });
-  }, [setEdges]);
-  
 
-  const onNodeDelete = useCallback((nodeId) => {
-    setNodes((nodes) => nodes.filter((node) => node.id !== nodeId));
-    setEdges((edges) => edges.filter(
-      (edge) => edge.source !== nodeId && edge.target !== nodeId
-    ));
-  }, [setNodes, setEdges]);
+    if (workflowIndex !== -1) {
+      savedWorkflows[workflowIndex] = updatedWorkflow;
+    } else {
+      savedWorkflows.push(updatedWorkflow);
+    }
 
-  const onEdgeDelete = useCallback((edgeId) => {
-    setEdges((edges) => edges.filter((edge) => edge.id !== edgeId));
+    localStorage.setItem('workflows', JSON.stringify(savedWorkflows));
+    console.log('Workflow saved successfully');
+  }, [workflow, nodes, edges]);
+
+  const onConnect = useCallback((params) => {
+    setEdges((eds) =>
+      addEdge({
+        ...params,
+        type: 'custom',
+        animated: true,
+        style: { stroke: '#ff6d5a', strokeWidth: 2 }
+      }, eds)
+    );
   }, [setEdges]);
 
   const edgeTypes = useMemo(() => ({
-    default: (props) => <EdgeWithDelete {...props} onEdgeDelete={onEdgeDelete} />,
-  }), [onEdgeDelete]);
+    custom: CustomEdge,
+  }), []);
 
   const onDragOver = useCallback((event) => {
     event.preventDefault();
@@ -241,8 +228,7 @@ export default function WorkflowEditor() {
         }
       }
     });
-}, [nodes, edges]);
-
+  });
 
   return (
     <div style={{
@@ -266,6 +252,7 @@ export default function WorkflowEditor() {
             <Button 
               startIcon={<WorkspacesOutlined />} 
               variant="outlined" 
+              onClick={handleWorkspaceClick}
               sx={{ color: '#ff6d5a', borderColor: '#ff6d5a' }}
             >
               Workspace
@@ -273,6 +260,7 @@ export default function WorkflowEditor() {
             <Button 
               startIcon={<Save />} 
               variant="outlined"
+              onClick={saveWorkflow}
               sx={{ color: '#ff6d5a', borderColor: '#ff6d5a' }}
             >
               Save
