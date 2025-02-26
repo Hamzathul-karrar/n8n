@@ -91,6 +91,7 @@ export default function WorkflowEditor() {
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
 
   const executeAiScraper = async () => {
+    console.log("Executing AI Scraper..."); // Debug log
     const businessType = prompt("Enter business type:");
     const location = prompt("Enter location:");
 
@@ -100,6 +101,7 @@ export default function WorkflowEditor() {
     }
 
     try {
+      console.log(`Scraping for: ${businessType} in ${location}`);
       const response = await fetch(`http://localhost:8080/api/scrape?businessType=${businessType}&location=${location}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
@@ -115,17 +117,22 @@ export default function WorkflowEditor() {
     }
   };
 
-  const onConnect = useCallback(
-    (params) => {
-      const edge = {
-        ...params,
-        type: 'smoothstep',
-        animated: true,
-      };
-      setEdges((eds) => addEdge(edge, eds));
-    },
-    [setEdges]
-  );
+  const onConnect = useCallback((params) => {
+    console.log("New Connection:", params);
+    
+    const edge = {
+      ...params,
+      type: 'smoothstep',
+      animated: true,
+    };
+    
+    setEdges((eds) => {
+      const updatedEdges = addEdge(edge, eds);
+      console.log("Updated Edges:", updatedEdges);
+      return updatedEdges;
+    });
+  }, [setEdges]);
+  
 
   const onNodeDelete = useCallback((nodeId) => {
     setNodes((nodes) => nodes.filter((node) => node.id !== nodeId));
@@ -167,7 +174,7 @@ export default function WorkflowEditor() {
           label: type, 
           type: type === "Chatbot Trigger" ? "Chatbot" : type,
           onDelete: onNodeDelete,
-          onExecute: type === 'AiScraper' ? executeAiScraper : null, 
+          onExecute: type.replace(/\s+/g, "").toLowerCase() === 'aiscraper' ? executeAiScraper : null, 
         },
       };
 
@@ -175,6 +182,9 @@ export default function WorkflowEditor() {
     },
     [reactFlowInstance, setNodes, onNodeDelete]
   );
+
+  const isAiScraper = (node) => 
+    node?.data.type.replace(/\s+/g, "").toLowerCase() === "aiscraper";
 
   const runWorkflow = useCallback(() => {
     console.log("Nodes in Workflow:", nodes);
@@ -190,28 +200,49 @@ export default function WorkflowEditor() {
       return;
     }
 
+    console.log("Chatbot Node Found:", chatbotNode);
+
     // Check if Chatbot is DIRECTLY connected to AiScraper
+    //const isAiScraper = (node) => node.data.type.replace(/\s+/g, "").toLowerCase().includes("aiscraper");
+
     edges.forEach((edge) => {
-      if (
-        (edge.source === chatbotNode.id || edge.target === chatbotNode.id) &&
-        nodes.some((node) => (node.id === edge.source || node.id === edge.target) && node.data.type === "AiScraper")
-      ) {
-        aiScraperConnected = true;
+      console.log(`Checking edge: ${edge.source} -> ${edge.target}`);
+      
+      const sourceNode = nodes.find((node) => node.id === edge.source);
+      const targetNode = nodes.find((node) => node.id === edge.target);
+
+      if (sourceNode && targetNode) {
+        console.log(`Source Node: ${sourceNode.data.type}, Target Node: ${targetNode.data.type}`);
       }
-    });
-  
+    if (
+      (edge.source === chatbotNode.id || edge.target === chatbotNode.id) &&
+      (isAiScraper(sourceNode) || isAiScraper(targetNode))
+    ) {
+      aiScraperConnected = true;
+    }
+  });
+
     if (!aiScraperConnected) {
       console.warn("Chatbot is not connected to AI Scraper!");
       return;
     }
+
+    console.log("Chatbot is connected to AI Scraper! Running scraper...");
   
     // Execute AI Scraper
     nodes.forEach((node) => {
-      if (node.data.type === "AiScraper" && node.data.onExecute) {
-        node.data.onExecute();
+      if (isAiScraper(node)) {
+        console.log("⚡ Executing AI Scraper...");
+        if (typeof node.data.onExecute === "function") {
+          node.data.onExecute(); // Run the function
+        } else {
+          console.error("❌ onExecute is not a function!", node);
+          executeAiScraper(); // Fallback execution
+        }
       }
     });
-  });
+}, [nodes, edges]);
+
 
   return (
     <div style={{
