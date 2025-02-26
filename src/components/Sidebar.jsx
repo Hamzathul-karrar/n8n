@@ -1,30 +1,7 @@
-import { Paper, List, ListItem, ListItemText, ListItemIcon, Typography } from '@mui/material';
-import {
-  Http,
-  Schedule,
-  Code,
-  Email,
-  Storage,
-  Functions,
-  CloudQueue,
-} from '@mui/icons-material';
+import { NavLink } from "react-router-dom";
+import "../styles/sidebar.css";
 
-const nodeTypes = [
-  { type: 'HTTP Request', icon: Http },
-  { type: 'Schedule Trigger', icon: Schedule },
-  { type: 'JavaScript', icon: Code },
-  { type: 'Email', icon: Email },
-  { type: 'Database', icon: Storage },
-  { type: 'Function', icon: Functions },
-  { type: 'API', icon: CloudQueue },
-];
-
-export default function Sidebar() {
-  const onDragStart = (event, nodeType) => {
-    event.dataTransfer.setData('application/reactflow', nodeType);
-    event.dataTransfer.effectAllowed = 'move';
-  };
-
+const Sidebar = () => {
   return (
     <div className="sidebar">
       <h1>AI-AGENT</h1>
@@ -38,4 +15,4 @@ export default function Sidebar() {
   );
 };
 
-// export default Sidebar;
+export default Sidebar;
