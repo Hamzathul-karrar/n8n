@@ -82,10 +82,10 @@ EdgeWithDelete.propTypes = {
 
 export default function WorkflowEditor() {
   const { id } = useParams();
-  const [workflow, setWorkflow] = useState(() => {
+  const workflow = useState(() => {
     const savedWorkflows = JSON.parse(localStorage.getItem('workflows') || '[]');
     return savedWorkflows.find(w => w.id === parseInt(id)) || null;
-  });
+  })[0];
   const [nodes, setNodes, onNodesChange] = useNodesState(workflow?.nodes || initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
@@ -176,11 +176,10 @@ export default function WorkflowEditor() {
     [reactFlowInstance, setNodes, onNodeDelete]
   );
 
-  const runWorkflow = () => {
+  const runWorkflow = useCallback(() => {
     console.log("Nodes in Workflow:", nodes);
     console.log("Edges in Workflow:", edges);
-  
-    let chatbotTriggered = false;
+
     let aiScraperConnected = false;
   
     // Find Chatbot node first
@@ -190,9 +189,7 @@ export default function WorkflowEditor() {
       console.warn("Chatbot node is not present, skipping execution.");
       return;
     }
-  
-    chatbotTriggered = true;
-  
+
     // Check if Chatbot is DIRECTLY connected to AiScraper
     edges.forEach((edge) => {
       if (
@@ -214,11 +211,11 @@ export default function WorkflowEditor() {
         node.data.onExecute();
       }
     });
-  };
-  
+  });
+
   return (
-    <div style={{ 
-      width: '100%', 
+    <div style={{
+      width: '100%',
       height: '100vh', 
       display: 'flex', 
       flexDirection: 'column',
@@ -249,7 +246,12 @@ export default function WorkflowEditor() {
             >
               Save
             </Button>
-            <Button startIcon={<PlayArrow />} variant="contained" color="primary">
+            <Button 
+              startIcon={<PlayArrow />} 
+              variant="contained" 
+              color="primary"
+              onClick={runWorkflow}
+            >
               Run
             </Button>
           </Stack>

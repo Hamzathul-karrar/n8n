@@ -1,27 +1,17 @@
-import { useState } from 'react';
+// import { useState } from 'react';
 import { Handle } from 'reactflow';
-import { Card, CardContent, Typography, IconButton } from '@mui/material';
+import { Card, CardContent, Typography, IconButton} from '@mui/material';
 import { Delete } from '@mui/icons-material';
 import PropTypes from 'prop-types';
 
-export default function CustomNode({ data, id, edges }) {
-  const [message, setMessage] = useState('');
+export default function CustomNode({ data, id }) {
+  
 
   const handleDelete = () => {
     if (data.onDelete) data.onDelete(id);
   };
 
-  const handleSend = () => {
-    // Check if this node is connected to another node
-    const isConnected = edges.some(edge => edge.source === id || edge.target === id);
-
-    if (isConnected && data.onExecute) {
-      data.onExecute(message);
-      setMessage('');
-    } else {
-      console.warn(`${data.label} is not connected to any node!`);
-    }
-  };
+  
 
   return (
     <Card 
@@ -55,9 +45,7 @@ export default function CustomNode({ data, id, edges }) {
           </IconButton>
         </div>
         
-        <Typography style={{ color: '#bbb', fontSize: '0.875rem' }}>
-          Type: {data.type}
-        </Typography>
+        
       </CardContent>
 
       <Handle 
@@ -65,6 +53,8 @@ export default function CustomNode({ data, id, edges }) {
         position="right" 
         style={{ background: '#ff6d5a', border: '2px solid #2a2a2a' }} 
       />
+
+      
     </Card>
   );
 }
