@@ -3,31 +3,34 @@ import { useState, useEffect, useRef } from "react";
 import '../styles/dashboard.css';
 import { useNavigate } from "react-router-dom";
 
+// Dashboard component that displays workflows and admin section
 const Dashboard = ({ section }) => {
-  const [showCreateForm, setShowCreateForm] = useState(false);
+  // State management
+  const [showCreateForm, setShowCreateForm] = useState(false); // Controls create workflow form visibility
   const [workflows, setWorkflows] = useState(() => {
+    // Initialize workflows from localStorage
     const savedWorkflows = localStorage.getItem('workflows');
     return savedWorkflows ? JSON.parse(savedWorkflows) : [];
   });
-  const [showSortDropdown, setShowSortDropdown] = useState(false);
-  const [sortOrder, setSortOrder] = useState('newest'); // 'newest' or 'oldest'
-  const [searchQuery, setSearchQuery] = useState('');
+  const [showSortDropdown, setShowSortDropdown] = useState(false); // Controls sort dropdown visibility
+  const [sortOrder, setSortOrder] = useState('newest'); // Sort order state ('newest' or 'oldest')
+  const [searchQuery, setSearchQuery] = useState(''); // Search input state
   const [formData, setFormData] = useState({
     projectName: '',
     description: ''
   });
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false); // State for delete confirmation
-  const [workflowToDelete, setWorkflowToDelete] = useState(null); // ID of the workflow to delete
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false); // Delete confirmation dialog state
+  const [workflowToDelete, setWorkflowToDelete] = useState(null); // ID of workflow to be deleted
   
-  const deleteConfirmRef = useRef(null); // Create a ref for the delete confirmation
-  const navigate = useNavigate();
+  const deleteConfirmRef = useRef(null); // Reference for delete confirmation popup
+  const navigate = useNavigate(); // Navigation function
 
   // Save workflows to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem('workflows', JSON.stringify(workflows));
   }, [workflows]);
 
-  // Close delete confirmation when clicking outside
+  // Handle clicking outside delete confirmation popup
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (deleteConfirmRef.current && !deleteConfirmRef.current.contains(event.target)) {
@@ -41,7 +44,7 @@ const Dashboard = ({ section }) => {
     };
   }, []);
 
-  // Helper function to format relative time
+  // Format relative time for display
   const getRelativeTime = (date) => {
     const now = new Date();
     const diff = now - new Date(date);
@@ -52,6 +55,7 @@ const Dashboard = ({ section }) => {
     return `${days} days ago`;
   };
 
+  // Handle workflow creation form submission
   const handleSubmit = (e) => {
     e.preventDefault();
     const now = new Date();
@@ -71,11 +75,11 @@ const Dashboard = ({ section }) => {
     setShowCreateForm(false);
     setFormData({ projectName: '', description: '' });
     
-    // Navigate to the workflow editor
+    // Navigate to the new workflow editor
     navigate(`/workflow/${newWorkflow.id}`);
   };
 
-  // Update the relative times every minute
+  // Update relative times every minute
   useEffect(() => {
     const interval = setInterval(() => {
       setWorkflows((currentWorkflows) => 
@@ -87,8 +91,9 @@ const Dashboard = ({ section }) => {
     }, 60000);
 
     return () => clearInterval(interval);
-  }, [workflows]); // Added `workflows` to dependency array
+  }, [workflows]);
 
+  // Handle workflow sorting
   const handleSort = (order) => {
     setSortOrder(order);
     const sortedWorkflows = [...workflows].sort((a, b) => {
@@ -100,6 +105,7 @@ const Dashboard = ({ section }) => {
     setShowSortDropdown(false);
   };
 
+  // Filter workflows based on search query
   const filteredWorkflows = workflows.filter(workflow => {
     const searchLower = searchQuery.toLowerCase();
     return (
@@ -108,12 +114,14 @@ const Dashboard = ({ section }) => {
     );
   });
 
+  // Handle workflow deletion
   const handleDelete = (id) => {
     setWorkflows(workflows.filter(workflow => workflow.id !== id));
     setShowDeleteConfirm(false);
     setWorkflowToDelete(null);
   };
 
+  // Navigate to workflow editor when clicking a workflow
   const handleWorkflowClick = (workflowId) => {
     navigate(`/workflow/${workflowId}`);
   };
