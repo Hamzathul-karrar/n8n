@@ -17,7 +17,7 @@ import {
   Box,
   DialogActions,
 } from '@mui/material';
-import { Delete, ArrowBack, InfoOutlined, Close } from '@mui/icons-material';
+import { Delete, ArrowBack, InfoOutlined, Close, Edit } from '@mui/icons-material';
 import PropTypes from 'prop-types';
 import MonacoEditor from '@monaco-editor/react';
 import axios from 'axios';
@@ -68,6 +68,9 @@ return urls.map(url => {
   // Add a new state for chat dialog
   const [isChatDialogOpen, setIsChatDialogOpen] = useState(false);
 
+  // Add this state to track if credentials are saved
+  const [isCredentialSaved, setIsCredentialSaved] = useState(false);
+
   useEffect(() => {
     // Load saved credentials from localStorage
     const savedCredentials = JSON.parse(localStorage.getItem('apiCredentials') || '{}');
@@ -79,6 +82,19 @@ return urls.map(url => {
       }));
     }
   }, []);
+
+  useEffect(() => {
+    const savedCredentials = JSON.parse(localStorage.getItem('apiCredentials') || '{}');
+    if (savedCredentials.apiKey) {
+      setIsCredentialSaved(true);
+      setFormData(prev => ({
+        ...prev,
+        credential: 'Connected',
+        apiKey: savedCredentials.apiKey,
+        model: savedCredentials.model || ''
+      }));
+    }
+  }, []); // Remove savedCredentials from dependency array since it's not defined
 
   const handleDelete = () => {
     if (data.onDelete) data.onDelete(id);
@@ -566,7 +582,7 @@ return urls.map(url => {
             Chat Model
           </DialogTitle>
           <DialogContent sx={{ padding: '24px' }}>
-            {/* Credential Selector */}
+            
             <FormControl fullWidth margin="normal">
               <InputLabel 
                 id="credential-label"
@@ -577,37 +593,71 @@ return urls.map(url => {
                   }
                 }}
               >
-                Credential to connect with
+                Add Credential to connect
               </InputLabel>
-              <Select
-                labelId="credential-label"
-                value={formData.credential}
-                onChange={(e) => {
-                  if (e.target.value === "+ Create new Credential") {
-                    setIsCredentialDialogOpen(true);
-                  } else {
-                    setFormData({
-                      ...formData,
-                      credential: e.target.value
-                    });
-                  }
-                }}
-                sx={{
-                  color: '#fff',
-                  '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#444'
-                  },
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#666'
-                  },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#ff6d5a'
-                  }
-                }}
-              >
-                <MenuItem value="Select Credential">Select Credential</MenuItem>
-                <MenuItem value="+ Create new Credential">+ Create new Credential</MenuItem>
-              </Select>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Select
+                  labelId="credential-label"
+                  value={isCredentialSaved ? "Connected" : formData.credential}
+                  disabled={isCredentialSaved}
+                  onChange={(e) => {
+                    if (e.target.value === "+ Create new Credential") {
+                      setIsCredentialDialogOpen(true);
+                    } else {
+                      setFormData({
+                        ...formData,
+                        credential: e.target.value
+                      });
+                    }
+                  }}
+                  sx={{
+                    flex: 1,
+                    color: '#fff',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#444'
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: isCredentialSaved ? '#444' : '#666'
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#ff6d5a'
+                    },
+                    '&.Mui-disabled': {
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#444'
+                      },
+                      '& .MuiSelect-select': {
+                        color: '#ff6d5a',
+                        '-webkit-text-fill-color': '#ff6d5a'
+                      }
+                    }
+                  }}
+                >
+                  <MenuItem value="Connected" disabled={!isCredentialSaved}>Connected</MenuItem>
+                  {!isCredentialSaved && (
+                    <>
+                      <MenuItem value="Select Credential">Select Credential</MenuItem>
+                      <MenuItem value="+ Create new Credential">+ Create new Credential</MenuItem>
+                    </>
+                  )}
+                </Select>
+                {isCredentialSaved && (
+                  <IconButton 
+                    onClick={() => {
+                      setIsCredentialSaved(false);
+                      setIsCredentialDialogOpen(true);
+                    }}
+                    sx={{ 
+                      color: '#ff6d5a',
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 109, 90, 0.08)'
+                      }
+                    }}
+                  >
+                    <Edit />
+                  </IconButton>
+                )}
+              </Box>
             </FormControl>
 
             {/* Model Input */}
@@ -648,8 +698,6 @@ return urls.map(url => {
                 }
               }}
             />
-
-            {/* Action Buttons */}
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 3 }}>
               <Button 
                 variant="outlined"
@@ -756,20 +804,11 @@ return urls.map(url => {
               <Box sx={{ flex: 5 }}>
 
                 <FormControl fullWidth margin="normal">
-                  <InputLabel 
-                    required
-                    sx={{ 
-                      color: '#888',
-                      '&.Mui-focused': {
-                        color: '#ff6d5a'
-                      }
-                    }}
-                  >
-                    API Key
-                  </InputLabel>
                   <TextField
                     required
                     fullWidth
+                    type="password"
+                    label="API Key"
                     value={formData.apiKey}
                     onChange={(e) => {
                       setFormData(prev => ({
@@ -788,6 +827,12 @@ return urls.map(url => {
                         },
                         '&.Mui-focused fieldset': {
                           borderColor: '#ff6d5a'
+                        }
+                      },
+                      '& .MuiInputLabel-root': {
+                        color: '#888',
+                        '&.Mui-focused': {
+                          color: '#ff6d5a'
                         }
                       }
                     }}
@@ -820,6 +865,7 @@ return urls.map(url => {
                   model: formData.model
                 };
                 localStorage.setItem('apiCredentials', JSON.stringify(credentials));
+                setIsCredentialSaved(true);
                 handleCredentialDialogClose();
               }}
               sx={{

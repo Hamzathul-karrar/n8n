@@ -8,7 +8,7 @@ import ReactFlow, {
   useEdgesState,
  
 } from 'reactflow';
-import { AppBar, Toolbar, Typography, Button, Stack } from '@mui/material';
+import { AppBar, Toolbar, Typography, Button, Stack, Snackbar, Alert } from '@mui/material';
 import { PlayArrow, Save, WorkspacesOutlined } from '@mui/icons-material';
 // import PropTypes from 'prop-types';
 import 'reactflow/dist/style.css';
@@ -30,6 +30,7 @@ export default function WorkflowEditor() {
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [error, setError] = useState(null);
 
   const onNodeDelete = useCallback((nodeId) => {
     setNodes((nodes) => nodes.filter((node) => node.id !== nodeId));
@@ -122,6 +123,22 @@ export default function WorkflowEditor() {
   }, [workflow, nodes, edges]);
 
   const onConnect = useCallback((params) => {
+    // Check if source node already has an outgoing connection
+    const sourceHasConnection = edges.some(edge => edge.source === params.source);
+    
+    // Check if target node already has an incoming connection
+    const targetHasConnection = edges.some(edge => edge.target === params.target);
+    
+    if (sourceHasConnection) {
+      setError("This node already has an outgoing connection");
+      return;
+    }
+
+    if (targetHasConnection) {
+      setError("This node already has an incoming connection");
+      return;
+    }
+
     setEdges((eds) =>
       addEdge({
         ...params,
@@ -130,7 +147,7 @@ export default function WorkflowEditor() {
         style: { stroke: '#ff6d5a', strokeWidth: 2 }
       }, eds)
     );
-  }, [setEdges]);
+  }, [edges, setEdges]);
 
   const edgeTypes = useMemo(() => ({
     custom: CustomEdge,
@@ -322,6 +339,23 @@ export default function WorkflowEditor() {
           </ReactFlow>
         </div>
       </div>
+      <Snackbar 
+        open={!!error} 
+        autoHideDuration={3000} 
+        onClose={() => setError(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={() => setError(null)} 
+          severity="warning" 
+          sx={{ 
+            backgroundColor: '#2a2a2a',
+            color: '#ff6d5a'
+          }}
+        >
+          {error}
+        </Alert>
+      </Snackbar>
     </div>
   );
 }
