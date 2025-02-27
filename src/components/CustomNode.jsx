@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Handle } from 'reactflow';
-<<<<<<< HEAD
 import { 
   Card, 
   CardContent, 
@@ -19,18 +18,20 @@ import {
   DialogActions,
 } from '@mui/material';
 import { Delete, ArrowBack, InfoOutlined, Close, Edit } from '@mui/icons-material';
-=======
-import { Card,CardContent,Typography, IconButton,Dialog,DialogTitle,DialogContent,
-  TextField,Select,MenuItem,FormControl,InputLabel,Button,Box,DialogActions,} from '@mui/material';
-import { Delete, ArrowBack, InfoOutlined, Close } from '@mui/icons-material';
->>>>>>> Abhay
 import PropTypes from 'prop-types';
 import MonacoEditor from '@monaco-editor/react';
 import axios from 'axios';
 
 export default function CustomNode({ data, id }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [formData, setFormData] = useState({ method: 'POST',url: '',authentication: 'None',credential: '',model: '',apiKey: ''});
+  const [formData, setFormData] = useState({ 
+    method: 'POST',
+    url: '',
+    authentication: 'None',
+    credential: '',
+    model: '',
+    apiKey: ''
+  });
   const [scheduleOutput, setScheduleOutput] = useState(`[
   {
     "name": "First item", "code": 1
@@ -52,21 +53,8 @@ return urls.map(url => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [isChatDialogOpen, setIsChatDialogOpen] = useState(false);
-<<<<<<< HEAD
-
-  // Add this state to track if credentials are saved
   const [isCredentialSaved, setIsCredentialSaved] = useState(false);
 
-=======
->>>>>>> Abhay
-  useEffect(() => {
-    const savedCredentials = JSON.parse(localStorage.getItem('apiCredentials') || '{}');
-    if (savedCredentials) {
-      setFormData(prev => ({ ...prev, apiKey: savedCredentials.apiKey || '', model: savedCredentials.model || '' }));
-    }
-  }, []);
-
-<<<<<<< HEAD
   useEffect(() => {
     const savedCredentials = JSON.parse(localStorage.getItem('apiCredentials') || '{}');
     if (savedCredentials.apiKey) {
@@ -78,28 +66,44 @@ return urls.map(url => {
         model: savedCredentials.model || ''
       }));
     }
-  }, []); // Remove savedCredentials from dependency array since it's not defined
+  }, []);
 
   const handleDelete = () => {
     if (data.onDelete) data.onDelete(id);
   };
-=======
-  const handleDelete = () => {  if (data.onDelete) data.onDelete(id); };
->>>>>>> Abhay
 
   const handleDoubleClick = () => {
-    if (data.type === "HTTP Request") { setIsDialogOpen(true);
-    } else if (data.type === "Click Trigger") { setIsDialogOpen(true);
-    } else if (data.type === "Code") { setIsDialogOpen(true);
-    } else if (data.type === "Chat Bot") { setIsDialogOpen(true);
+    if (data.type === "HTTP Request") { 
+      setIsDialogOpen(true);
+    } else if (data.type === "Click Trigger") { 
+      setIsDialogOpen(true);
+    } else if (data.type === "Code") { 
+      setIsDialogOpen(true);
+    } else if (data.type === "Chat Bot") { 
+      setIsDialogOpen(true);
     }
   };
 
-  const handleClose = () => {setIsDialogOpen(false); };
-  const handleFormChange = (event) => { setFormData({ ...formData, [event.target.name]: event.target.value }); };
-  const handleScheduleOutputChange = (value) => {setScheduleOutput(value); };
-  const handleCodeChange = (value) => { setJsCode(value); };
-  const handleCredentialDialogClose = () => {  setIsCredentialDialogOpen(false); };
+  const handleClose = () => {
+    setIsDialogOpen(false);
+  };
+
+  const handleFormChange = (event) => {
+    setFormData({ ...formData, [event.target.name]: event.target.value });
+  };
+
+  const handleScheduleOutputChange = (value) => {
+    setScheduleOutput(value);
+  };
+
+  const handleCodeChange = (value) => {
+    setJsCode(value);
+  };
+
+  const handleCredentialDialogClose = () => {
+    setIsCredentialDialogOpen(false);
+  };
+
   const handleSendMessage = async () => {
     if (!input.trim() || !formData.apiKey || !formData.model) return;
     const newMessages = [...messages, { role: "user", content: input }];
@@ -113,7 +117,10 @@ return urls.map(url => {
           messages: newMessages,
         },
         {
-          headers: { Authorization: `Bearer ${formData.apiKey}`, "Content-Type": "application/json", },
+          headers: { 
+            Authorization: `Bearer ${formData.apiKey}`, 
+            "Content-Type": "application/json",
+          },
         }
       );
       const aiResponse = response.data.choices[0].message;
@@ -123,10 +130,9 @@ return urls.map(url => {
       alert("Failed to fetch response. Check API key and internet connection.");
     }
   };
+
   return (
     <>
-<<<<<<< HEAD
-      {/* Only show target handle if not Click Trigger */}
       {data.type !== "Click Trigger" && (
         <Handle 
           type="target" 
@@ -135,57 +141,39 @@ return urls.map(url => {
         />
       )}
       
-    <Card 
-      variant="outlined" 
-      style={{ 
-        minWidth: 250,
-        background: '#2a2a2a',
-        border: '1px solid #444',
-        borderRadius: '8px',
-        color: '#fff',
+      <Card 
+        variant="outlined" 
+        style={{ 
+          minWidth: 250,
+          background: '#2a2a2a',
+          border: '1px solid #444',
+          borderRadius: '8px',
+          color: '#fff',
           padding: 8,
           cursor: 'pointer'
         }}
         onDoubleClick={handleDoubleClick}
       >
-      <CardContent>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h6" style={{ color: '#fff' }}>
-            {data.label}
-          </Typography>
-          <IconButton 
-            size="small" 
-            sx={{ color: '#ff6d5a', '&:hover': { color: '#ff8d7a' } }}
-            onClick={handleDelete}
-          >
-            <Delete fontSize="small" />
-          </IconButton>
-        </div>
-        
-=======
-      <Card 
-        variant="outlined" 
-        style={{  minWidth: 250, background: '#2a2a2a', border: '1px solid #444', borderRadius: '8px', color: '#fff', padding: 8, cursor: 'pointer' }}
-        onDoubleClick={handleDoubleClick} >
-        <Handle 
-          type="target" position="left" style={{ background: '#ff6d5a', border: '2px solid #2a2a2a' }} />
         <CardContent>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Typography variant="h6" style={{ color: '#fff' }}>
               {data.label}
             </Typography>
-            <IconButton size="small" sx={{ color: '#ff6d5a', '&:hover': { color: '#ff8d7a' } }} onClick={handleDelete}>
+            <IconButton 
+              size="small" 
+              sx={{ color: '#ff6d5a', '&:hover': { color: '#ff8d7a' } }}
+              onClick={handleDelete}
+            >
               <Delete fontSize="small" />
             </IconButton>
           </div>
->>>>>>> Abhay
+          
           {data.type === "HTTP Request" && (
-        <Typography style={{ color: '#bbb', fontSize: '0.875rem' }}>
+            <Typography style={{ color: '#bbb', fontSize: '0.875rem' }}>
               {formData.method} {formData.url}
-        </Typography>
+            </Typography>
           )}
-<<<<<<< HEAD
-      </CardContent>
+        </CardContent>
       </Card>
 
       <Handle 
@@ -199,12 +187,6 @@ return urls.map(url => {
           open={isDialogOpen} 
           onClose={handleClose}
           maxWidth={false}
-=======
-        </CardContent>
-        <Handle type="source" position="right" style={{ background: '#ff6d5a', border: '2px solid #2a2a2a' }} />
-      </Card>
-      {data.type === "HTTP Request" && ( <Dialog open={isDialogOpen} onClose={handleClose} maxWidth={false}
->>>>>>> Abhay
           PaperProps={{
             style: { backgroundColor: '#2a2a2a', color: '#fff', width: '40%', borderRadius: '8px', padding: '16px'}
           }}
@@ -346,7 +328,6 @@ return urls.map(url => {
           <DialogContent sx={{ padding: '24px' }}>
             
             <FormControl fullWidth margin="normal">
-<<<<<<< HEAD
               <InputLabel 
                 id="credential-label"
                 sx={{ 
@@ -421,30 +402,10 @@ return urls.map(url => {
                   </IconButton>
                 )}
               </Box>
-=======
-              <InputLabel  id="credential-label"
-                sx={{ color: '#888','&.Mui-focused': { color: '#ff6d5a' }}}>
-                Credential to connect with
-              </InputLabel>
-              <Select labelId="credential-label" value={formData.credential}
-                onChange={(e) => {
-                  if (e.target.value === "+ Create new Credential") { setIsCredentialDialogOpen(true);
-                  } else {  setFormData({...formData,credential: e.target.value });}
-                }}
-                sx={{color: '#fff', '& .MuiOutlinedInput-notchedOutline': { borderColor: '#444'},
-                  '&:hover .MuiOutlinedInput-notchedOutline': {borderColor: '#666' },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#ff6d5a' }
-                }} >
-                <MenuItem value="Select Credential">Select Credential</MenuItem>
-                <MenuItem value="+ Create new Credential">+ Create new Credential</MenuItem>
-              </Select>
->>>>>>> Abhay
             </FormControl>
-            {/* Model Input */}
             <TextField fullWidth margin="normal" label="Model" value={formData.model}
               onChange={(e) => { setFormData({ ...formData, model: e.target.value });  }}
               placeholder="Enter the model name (e.g., google/gemini-1.5-flash)"
-<<<<<<< HEAD
               sx={{
                 '& .MuiOutlinedInput-root': {
                   color: '#fff',
@@ -470,16 +431,6 @@ return urls.map(url => {
                 }
               }}
             />
-=======
-              sx={{'& .MuiOutlinedInput-root': { color: '#fff',
-                  '& fieldset': { borderColor: '#444' },
-                  '&:hover fieldset': { borderColor: '#666' },
-                  '&.Mui-focused fieldset': { borderColor: '#ff6d5a' } },
-                '& .MuiInputLabel-root': { color: '#888',
-                  '&.Mui-focused': { color: '#ff6d5a' }},
-                '& .MuiInputBase-input::placeholder': {color: '#666', opacity: 1 } }} />
-            {/* Action Buttons */}
->>>>>>> Abhay
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 3 }}>
               <Button  variant="outlined" onClick={handleClose}
                 sx={{  color: '#fff', borderColor: '#666','&:hover': { borderColor: '#888' } }}>
@@ -527,7 +478,6 @@ return urls.map(url => {
               </Box>
               <Box sx={{ flex: 5 }}>
                 <FormControl fullWidth margin="normal">
-<<<<<<< HEAD
                   <TextField
                     required
                     fullWidth
@@ -561,18 +511,6 @@ return urls.map(url => {
                       }
                     }}
                   />
-=======
-                  <InputLabel  required
-                    sx={{  color: '#888', '&.Mui-focused': { color: '#ff6d5a' }}}>
-                    API Key
-                  </InputLabel>
-                  <TextField required fullWidth value={formData.apiKey}
-                    onChange={(e) => { setFormData(prev => ({ ...prev, apiKey: e.target.value }));
-                    }}
-                    sx={{ '& .MuiOutlinedInput-root': { color: '#fff', '& fieldset': { borderColor: '#444'},
-                        '&:hover fieldset': { borderColor: '#666' },
-                        '&.Mui-focused fieldset': { borderColor: '#ff6d5a'} } }} />
->>>>>>> Abhay
                 </FormControl>
                 <Typography 
                   sx={{ color: '#888',  fontSize: '0.875rem', marginTop: '24px', display: 'flex', alignItems: 'center', gap: 1 }} >
@@ -642,8 +580,10 @@ return urls.map(url => {
     </>
   );
 }
+
 CustomNode.propTypes = {
-  data: PropTypes.shape({ label: PropTypes.string.isRequired,
+  data: PropTypes.shape({ 
+    label: PropTypes.string.isRequired,
     type: PropTypes.string.isRequired,
     onDelete: PropTypes.func.isRequired,
     onExecute: PropTypes.func,

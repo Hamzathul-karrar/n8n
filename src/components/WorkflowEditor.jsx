@@ -33,6 +33,10 @@ export default function WorkflowEditor() {
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const nodesRef = useRef(nodes);
   const edgesRef = useRef(edges);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const [processedPath, setProcessedPath] = useState(null);
+  const [graph, setGraph] = useState(() => Graph.fromEdges(initialEdges));
 
   useEffect(() => {
     console.log("📡 Edges Updated: ", edges);
@@ -351,18 +355,6 @@ const exportDataToExcel = async () => {
 
   
 
-  const runWorkflow = useCallback(() => {
-    // Use the refs to ensure we have the latest state
-    const currentNodes = nodesRef.current;
-    const currentEdges = edgesRef.current;
-    
-    console.log("Running workflow with:", {
-        nodes: currentNodes,
-        edges: currentEdges
-    });
-
-    const chatbotNode = currentNodes.find((node) => node.data.type.toLowerCase().includes("chatbot"));
-  // Add this new function to log node connections
   const logNodeConnections = useCallback(() => {
     console.group('🔍 Node Connections:');
     
@@ -521,36 +513,36 @@ const exportDataToExcel = async () => {
   const runWorkflow = useCallback(async () => {
     console.group('🚀 Running Workflow');
     
-    // Auto-save the workflow before running
     try {
-      await saveWorkflow();
-      console.log('💾 Workflow auto-saved before execution');
+        await saveWorkflow();
+        console.log('💾 Workflow auto-saved before execution');
     } catch (error) {
-      console.warn('⚠️ Could not auto-save workflow:', error);
+        console.warn('⚠️ Could not auto-save workflow:', error);
     }
     
-    // Log all current connections
     logNodeConnections();
 
-    // Rest of the runWorkflow implementation...
-    // Find Chatbot node
-    const chatbotNode = nodes.find((node) => node.data.type.toLowerCase().includes("chatbot"));
+    const chatbotNode = nodes.find((node) => 
+        node.data.type.toLowerCase().includes("chatbot")
+    );
+
     if (!chatbotNode) {
         console.error('❌ Chatbot node not found');
-      console.groupEnd();
-      setError("Chatbot node is not present");
+        console.groupEnd();
+        setError("Chatbot node is not present");
         return;
     }
+
     let aiScraperConnected = false;
     let aiScraperNode = null;
 
     console.log("Chatbot Node Found:", chatbotNode);
 
-    currentEdges.forEach((edge) => {
+    edges.forEach((edge) => {
         console.log(`Checking edge: ${edge.source} -> ${edge.target}`);
         
-        const sourceNode = currentNodes.find((node) => node.id === edge.source);
-        const targetNode = currentNodes.find((node) => node.id === edge.target);
+        const sourceNode = nodes.find((node) => node.id === edge.source);
+        const targetNode = nodes.find((node) => node.id === edge.target);
 
         if (
             (sourceNode?.id === chatbotNode.id && isAiScraper(targetNode)) ||
@@ -569,7 +561,7 @@ const exportDataToExcel = async () => {
     console.log("Chatbot is connected to AI Scraper! Running scraper...");
 
     // Execute AI Scraper
-    currentNodes.forEach((node) => {
+    nodes.forEach((node) => {
         if (isAiScraper(node)) {
             console.log("⚡ Executing AI Scraper...");
             if (typeof node.data.onExecute === "function") {
@@ -580,7 +572,7 @@ const exportDataToExcel = async () => {
             }
         }
     });
-}, [executeAiScraper]); // Only depend on executeAiScraper
+}, [nodes, edges, saveWorkflow, logNodeConnections, setError, executeAiScraper]);
 
 
   const handleWorkspaceClick = useCallback(() => {
@@ -739,4 +731,4 @@ const exportDataToExcel = async () => {
       </Snackbar>
     </div>
   );
-}
+};
