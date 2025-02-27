@@ -169,52 +169,55 @@ return urls.map(url => {
 
   return (
     <>
-      <Card 
-        variant="outlined" 
-        style={{ 
-          minWidth: 250,
-          background: '#2a2a2a',
-          border: '1px solid #444',
-          borderRadius: '8px',
-          color: '#fff',
-          padding: 8,
-          cursor: 'pointer'
-        }}
-        onDoubleClick={handleDoubleClick}
-      >
+      {/* Only show target handle if not Click Trigger */}
+      {data.type !== "Click Trigger" && (
         <Handle 
           type="target" 
           position="left" 
           style={{ background: '#ff6d5a', border: '2px solid #2a2a2a' }} 
         />
+      )}
+      
+    <Card 
+      variant="outlined" 
+      style={{ 
+        minWidth: 250,
+        background: '#2a2a2a',
+        border: '1px solid #444',
+        borderRadius: '8px',
+        color: '#fff',
+          padding: 8,
+          cursor: 'pointer'
+        }}
+        onDoubleClick={handleDoubleClick}
+      >
+      <CardContent>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="h6" style={{ color: '#fff' }}>
+            {data.label}
+          </Typography>
+          <IconButton 
+            size="small" 
+            sx={{ color: '#ff6d5a', '&:hover': { color: '#ff8d7a' } }}
+            onClick={handleDelete}
+          >
+            <Delete fontSize="small" />
+          </IconButton>
+        </div>
         
-        <CardContent>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h6" style={{ color: '#fff' }}>
-              {data.label}
-            </Typography>
-            <IconButton 
-              size="small" 
-              sx={{ color: '#ff6d5a', '&:hover': { color: '#ff8d7a' } }}
-              onClick={handleDelete}
-            >
-              <Delete fontSize="small" />
-            </IconButton>
-          </div>
-          
           {data.type === "HTTP Request" && (
-            <Typography style={{ color: '#bbb', fontSize: '0.875rem' }}>
+        <Typography style={{ color: '#bbb', fontSize: '0.875rem' }}>
               {formData.method} {formData.url}
-            </Typography>
+        </Typography>
           )}
-        </CardContent>
-
-        <Handle 
-          type="source" 
-          position="right" 
-          style={{ background: '#ff6d5a', border: '2px solid #2a2a2a' }} 
-        />
+      </CardContent>
       </Card>
+
+      <Handle 
+        type="source" 
+        position="right" 
+        style={{ background: '#ff6d5a', border: '2px solid #2a2a2a' }} 
+      />
 
       {data.type === "HTTP Request" && (
         <Dialog 

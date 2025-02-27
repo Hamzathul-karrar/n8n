@@ -34,6 +34,7 @@ export default function WorkflowEditor() {
   const [error, setError] = useState(null);
   const [graph, setGraph] = useState(new Graph());
   const [processedPath, setProcessedPath] = useState(null);
+  const [success, setSuccess] = useState(null);
 
   const onNodeDelete = useCallback((nodeId) => {
     setNodes((nodes) => nodes.filter((node) => node.id !== nodeId));
@@ -132,10 +133,12 @@ export default function WorkflowEditor() {
         }
 
         localStorage.setItem('workflows', JSON.stringify(savedWorkflows));
+        setSuccess('Workflow saved successfully');
         console.log('Workflow saved successfully');
         resolve(updatedWorkflow);
       } catch (error) {
         console.error('Error saving workflow:', error);
+        setError('Failed to save workflow');
         reject(error);
       }
     });
@@ -147,6 +150,15 @@ export default function WorkflowEditor() {
     
     // Check if target node already has an incoming connection
     const targetHasConnection = edges.some(edge => edge.target === params.target);
+    
+    // Get the target node to check its type
+    const targetNode = nodes.find(node => node.id === params.target);
+    
+    // Prevent incoming connections to Click Trigger
+    if (targetNode?.data.type === "Click Trigger") {
+      setError("Click Trigger node cannot have incoming connections");
+      return;
+    }
     
     if (sourceHasConnection) {
       setError("This node already has an outgoing connection");
@@ -166,7 +178,7 @@ export default function WorkflowEditor() {
         style: { stroke: '#ff6d5a', strokeWidth: 2 }
       }, eds)
     );
-  }, [edges, setEdges]);
+  }, [edges, nodes, setEdges]);
 
   const edgeTypes = useMemo(() => ({
     custom: CustomEdge,
@@ -469,7 +481,7 @@ export default function WorkflowEditor() {
       }}>
         <Sidebar />
         <div style={{ flex: 1, position: 'relative' }}>
-          <ReactFlow
+        <ReactFlow 
             nodes={nodes.map(node => ({
               ...node,
               style: {
@@ -493,19 +505,19 @@ export default function WorkflowEditor() {
                 })
               }
             }))}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
+          onNodesChange={onNodesChange} 
+          onEdgesChange={onEdgesChange} 
+          onConnect={onConnect} 
             onInit={setReactFlowInstance}
             onDrop={onDrop}
             onDragOver={onDragOver}
-            nodeTypes={nodeTypes}
-            edgeTypes={edgeTypes}
+          nodeTypes={nodeTypes} 
+          edgeTypes={edgeTypes}
             defaultEdgeOptions={{
               type: 'smoothstep',
               animated: true,
             }}
-            fitView
+          fitView
             style={{ background: '#1a1a1a' }}  // Dark background
           >
             <Background color="#333" />
@@ -521,7 +533,7 @@ export default function WorkflowEditor() {
                 maskColor: '#1a1a1a'
               }} 
             />
-          </ReactFlow>
+        </ReactFlow>
         </div>
       </div>
       <Snackbar 
@@ -539,6 +551,23 @@ export default function WorkflowEditor() {
           }}
         >
           {error}
+        </Alert>
+      </Snackbar>
+      <Snackbar 
+        open={!!success} 
+        autoHideDuration={3000} 
+        onClose={() => setSuccess(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={() => setSuccess(null)} 
+          severity="success" 
+          sx={{ 
+            backgroundColor: '#2a2a2a',
+            color: '#4caf50'  // Green color for success
+          }}
+        >
+          {success}
         </Alert>
       </Snackbar>
     </div>
