@@ -11,10 +11,12 @@ import { AppBar, Toolbar, Typography, Button, Stack, Snackbar, Alert } from '@mu
 import { PlayArrow, Save, WorkspacesOutlined } from '@mui/icons-material';
 // import PropTypes from 'prop-types';
 import 'reactflow/dist/style.css';
+import '../styles/workflow.css';
 import CustomNode from './CustomNode';
 import Sidebar from './WorkFlowSidebar';
 import { useParams, useNavigate } from 'react-router-dom';
 import CustomEdge from './CustomEdge';
+import Graph from '../utils/GraphUtils';
 
 const nodeTypes = {
   custom: CustomNode,
@@ -30,6 +32,8 @@ export default function WorkflowEditor() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [error, setError] = useState(null);
+  const [graph, setGraph] = useState(new Graph());
+  const [processedPath, setProcessedPath] = useState(null);
 
   const onNodeDelete = useCallback((nodeId) => {
     setNodes((nodes) => nodes.filter((node) => node.id !== nodeId));
@@ -95,30 +99,46 @@ export default function WorkflowEditor() {
     }
   }, [workflow, setNodes, setEdges]);
 
+  // Update graph when edges change
+  useEffect(() => {
+    const newGraph = Graph.fromEdges(edges);
+    setGraph(newGraph);
+  }, [edges]);
+
   const saveWorkflow = useCallback(() => {
-    if (!workflow?.id) {
-      console.warn("No workflow ID found");
-      return;
-    }
+    return new Promise((resolve, reject) => {
+      if (!workflow?.id) {
+        const error = new Error("No workflow ID found");
+        console.warn(error.message);
+        reject(error);
+        return;
+      }
 
-    const savedWorkflows = JSON.parse(localStorage.getItem('workflows') || '[]');
-    const workflowIndex = savedWorkflows.findIndex(w => w.id === workflow.id);
+      try {
+        const savedWorkflows = JSON.parse(localStorage.getItem('workflows') || '[]');
+        const workflowIndex = savedWorkflows.findIndex(w => w.id === workflow.id);
 
-    const updatedWorkflow = {
-      ...workflow,
-      nodes: nodes,
-      edges: edges,
-      lastModified: new Date().toISOString()
-    };
+        const updatedWorkflow = {
+          ...workflow,
+          nodes: nodes,
+          edges: edges,
+          lastModified: new Date().toISOString()
+        };
 
-    if (workflowIndex !== -1) {
-      savedWorkflows[workflowIndex] = updatedWorkflow;
-    } else {
-      savedWorkflows.push(updatedWorkflow);
-    }
+        if (workflowIndex !== -1) {
+          savedWorkflows[workflowIndex] = updatedWorkflow;
+        } else {
+          savedWorkflows.push(updatedWorkflow);
+        }
 
-    localStorage.setItem('workflows', JSON.stringify(savedWorkflows));
-    console.log('Workflow saved successfully');
+        localStorage.setItem('workflows', JSON.stringify(savedWorkflows));
+        console.log('Workflow saved successfully');
+        resolve(updatedWorkflow);
+      } catch (error) {
+        console.error('Error saving workflow:', error);
+        reject(error);
+      }
+    });
   }, [workflow, nodes, edges]);
 
   const onConnect = useCallback((params) => {
@@ -189,63 +209,208 @@ export default function WorkflowEditor() {
   const isAiScraper = (node) => 
     node?.data.type.replace(/\s+/g, "").toLowerCase() === "aiscraper";
 
-  const runWorkflow = useCallback(() => {
-    console.log("Nodes in Workflow:", nodes);
-    console.log("Edges in Workflow:", edges);
+  // Add this new function to log node connections
+  const logNodeConnections = useCallback(() => {
+    console.group('🔍 Node Connections:');
+    
+    // Log all nodes
+    console.log('📍 All Nodes:', nodes.map(node => ({
+      id: node.id,
+      type: node.data.type,
+      label: node.data.label
+    })));
 
-    let aiScraperConnected = false;
-  
-    // Find Chatbot node first
-    const chatbotNode = nodes.find((node) => node.data.type.toLowerCase().includes("chatbot"));
-  
-    if (!chatbotNode) {
-      console.warn("Chatbot node is not present, skipping execution.");
-      return;
-    }
-
-    console.log("Chatbot Node Found:", chatbotNode);
-
-    // Check if Chatbot is DIRECTLY connected to AiScraper
-    //const isAiScraper = (node) => node.data.type.replace(/\s+/g, "").toLowerCase().includes("aiscraper");
-
-    edges.forEach((edge) => {
-      console.log(`Checking edge: ${edge.source} -> ${edge.target}`);
-      
-      const sourceNode = nodes.find((node) => node.id === edge.source);
-      const targetNode = nodes.find((node) => node.id === edge.target);
-
-      if (sourceNode && targetNode) {
-        console.log(`Source Node: ${sourceNode.data.type}, Target Node: ${targetNode.data.type}`);
+    // Log all edges with their connections
+    console.log('🔗 All Edges:', edges.map(edge => ({
+      id: edge.id,
+      source: {
+        id: edge.source,
+        type: nodes.find(n => n.id === edge.source)?.data.type,
+        label: nodes.find(n => n.id === edge.source)?.data.label
+      },
+      target: {
+        id: edge.target,
+        type: nodes.find(n => n.id === edge.target)?.data.type,
+        label: nodes.find(n => n.id === edge.target)?.data.label
       }
-    if (
-      (edge.source === chatbotNode.id || edge.target === chatbotNode.id) &&
-      (isAiScraper(sourceNode) || isAiScraper(targetNode))
-    ) {
-      aiScraperConnected = true;
-    }
-  });
+    })));
 
-    if (!aiScraperConnected) {
-      console.warn("Chatbot is not connected to AI Scraper!");
-      return;
-    }
+    // For each node, log its connections
+    nodes.forEach(node => {
+      const outgoingEdges = edges.filter(e => e.source === node.id);
+      const incomingEdges = edges.filter(e => e.target === node.id);
+      
+      console.group(`📌 Node: ${node.data.label} (${node.id})`);
+      if (outgoingEdges.length > 0) {
+        console.log('➡️ Outgoing connections:', outgoingEdges.map(e => ({
+          edgeId: e.id,
+          to: nodes.find(n => n.id === e.target)?.data.label
+        })));
+      }
+      if (incomingEdges.length > 0) {
+        console.log('⬅️ Incoming connections:', incomingEdges.map(e => ({
+          edgeId: e.id,
+          from: nodes.find(n => n.id === e.source)?.data.label
+        })));
+      }
+      console.groupEnd();
+    });
 
-    console.log("Chatbot is connected to AI Scraper! Running scraper...");
-  
-    // Execute AI Scraper
-    nodes.forEach((node) => {
-      if (isAiScraper(node)) {
-        console.log("⚡ Executing AI Scraper...");
-        if (typeof node.data.onExecute === "function") {
-          node.data.onExecute(); // Run the function
-        } else {
-          console.error("❌ onExecute is not a function!", node);
-          executeAiScraper(); // Fallback execution
+    console.groupEnd();
+  }, [nodes, edges]);
+
+  // Modify the processDataThroughPath function to include detailed logging
+  const processDataThroughPath = async (sourceId, targetId, initialData) => {
+    setProcessedPath(null);
+    setError(null);
+
+    try {
+      // Log the attempt to find a path
+      console.group('🔄 Processing Data Flow:');
+      console.log('🎯 Finding path from:', {
+        source: nodes.find(n => n.id === sourceId)?.data.label,
+        sourceId: sourceId,
+        target: nodes.find(n => n.id === targetId)?.data.label,
+        targetId: targetId
+      });
+
+      // Find path from source to target
+      const path = graph.findPath(sourceId, targetId);
+      
+      if (!path) {
+        console.warn('❌ No valid path found between nodes');
+        console.groupEnd();
+        setError("No valid path found between the selected nodes");
+        return null;
+      }
+
+      // Log the found path
+      console.log('✅ Path found:', path.map(nodeId => ({
+        id: nodeId,
+        label: nodes.find(n => n.id === nodeId)?.data.label
+      })));
+
+      // Log the edges that will be used
+      const pathEdges = [];
+      for (let i = 0; i < path.length - 1; i++) {
+        const edge = edges.find(e => e.source === path[i] && e.target === path[i + 1]);
+        if (edge) {
+          pathEdges.push(edge);
         }
       }
-    });
-}, [nodes, edges]);
+      console.log('🔗 Edges in path:', pathEdges.map(edge => ({
+        id: edge.id,
+        from: nodes.find(n => n.id === edge.source)?.data.label,
+        to: nodes.find(n => n.id === edge.target)?.data.label
+      })));
 
+      // Highlight the path that will be traversed
+      setProcessedPath(path);
+
+      // Process data through the path
+      const result = await graph.passData(path, initialData, async (nodeId, data) => {
+        const node = nodes.find(n => n.id === nodeId);
+        if (!node) throw new Error(`Node ${nodeId} not found`);
+
+        console.log('📦 Processing data at node:', {
+          id: nodeId,
+          label: node.data.label,
+          type: node.data.type,
+          inputData: data
+        });
+
+        // Process data based on node type
+        let processedData;
+        switch (node.data.type) {
+          case 'AiScraper':
+            if (typeof node.data.onExecute === 'function') {
+              await node.data.onExecute();
+            }
+            processedData = { ...data, scraped: true };
+            break;
+
+          case 'Chatbot':
+            processedData = { ...data, processed: true };
+            break;
+
+          default:
+            processedData = data;
+        }
+
+        console.log('✨ Node processing complete:', {
+          id: nodeId,
+          label: node.data.label,
+          outputData: processedData
+        });
+
+        return processedData;
+      });
+
+      if (!result.success) {
+        console.error('❌ Error processing data:', result.error);
+        console.groupEnd();
+        setError(result.error || "Error processing data through nodes");
+        return null;
+      }
+
+      console.log('✅ Data flow completed successfully:', result);
+      console.groupEnd();
+      return result.data;
+    } catch (error) {
+      console.error('❌ Error:', error);
+      console.groupEnd();
+      setError(error.message);
+      return null;
+    }
+  };
+
+  // Modify the runWorkflow function to include auto-save
+  const runWorkflow = useCallback(async () => {
+    console.group('🚀 Running Workflow');
+    
+    // Auto-save the workflow before running
+    try {
+      await saveWorkflow();
+      console.log('💾 Workflow auto-saved before execution');
+    } catch (error) {
+      console.warn('⚠️ Could not auto-save workflow:', error);
+    }
+    
+    // Log all current connections
+    logNodeConnections();
+
+    // Rest of the runWorkflow implementation...
+    // Find Chatbot node
+    const chatbotNode = nodes.find((node) => node.data.type.toLowerCase().includes("chatbot"));
+    if (!chatbotNode) {
+      console.error('❌ Chatbot node not found');
+      console.groupEnd();
+      setError("Chatbot node is not present");
+      return;
+    }
+
+    // Find AI Scraper node
+    const aiScraperNode = nodes.find((node) => isAiScraper(node));
+    if (!aiScraperNode) {
+      console.error('❌ AI Scraper node not found');
+      console.groupEnd();
+      setError("AI Scraper node is not present");
+      return;
+    }
+
+    // Process data from Chatbot to AI Scraper
+    const result = await processDataThroughPath(
+      chatbotNode.id,
+      aiScraperNode.id,
+      { message: "Initial data from chatbot" }
+    );
+
+    if (result) {
+      console.log('✅ Workflow completed successfully:', result);
+    }
+    
+    console.groupEnd();
+  }, [nodes, edges, graph, logNodeConnections, saveWorkflow]);
 
   const handleWorkspaceClick = useCallback(() => {
     navigate('/');
@@ -305,8 +470,29 @@ export default function WorkflowEditor() {
         <Sidebar />
         <div style={{ flex: 1, position: 'relative' }}>
           <ReactFlow
-            nodes={nodes}
-            edges={edges}
+            nodes={nodes.map(node => ({
+              ...node,
+              style: {
+                ...node.style,
+                // Highlight nodes in the processed path
+                ...(processedPath?.includes(node.id) && {
+                  border: '2px solid #ff6d5a',
+                  boxShadow: '0 0 10px rgba(255, 109, 90, 0.5)'
+                })
+              }
+            }))}
+            edges={edges.map(edge => ({
+              ...edge,
+              style: {
+                ...edge.style,
+                // Highlight edges in the processed path
+                ...(processedPath?.includes(edge.source) && processedPath.includes(edge.target) && {
+                  stroke: '#ff6d5a',
+                  strokeWidth: 3,
+                  animation: 'flowAnimation 1s infinite'
+                })
+              }
+            }))}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
