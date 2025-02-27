@@ -218,8 +218,9 @@ export default function WorkflowEditor() {
     [reactFlowInstance, setNodes, onNodeDelete]
   );
 
-  const isAiScraper = (node) => 
-    node?.data.type.replace(/\s+/g, "").toLowerCase() === "aiscraper";
+  const isAiScraper = useCallback((node) => 
+    node?.data.type.replace(/\s+/g, "").toLowerCase() === "aiscraper"
+  , []);
 
   // Add this new function to log node connections
   const logNodeConnections = useCallback(() => {
@@ -272,7 +273,7 @@ export default function WorkflowEditor() {
   }, [nodes, edges]);
 
   // Modify the processDataThroughPath function to include detailed logging
-  const processDataThroughPath = async (sourceId, targetId, initialData) => {
+  const processDataThroughPath = useCallback(async (sourceId, targetId, initialData) => {
     setProcessedPath(null);
     setError(null);
 
@@ -374,7 +375,7 @@ export default function WorkflowEditor() {
       setError(error.message);
       return null;
     }
-  };
+  }, [nodes, edges, graph]);
 
   // Modify the runWorkflow function to include auto-save
   const runWorkflow = useCallback(async () => {
@@ -390,8 +391,6 @@ export default function WorkflowEditor() {
     
     // Log all current connections
     logNodeConnections();
-
-    // Rest of the runWorkflow implementation...
     // Find Chatbot node
     const chatbotNode = nodes.find((node) => node.data.type.toLowerCase().includes("chatbot"));
     if (!chatbotNode) {
@@ -422,7 +421,7 @@ export default function WorkflowEditor() {
     }
     
     console.groupEnd();
-  }, [nodes, edges, graph, logNodeConnections, saveWorkflow]);
+  }, [nodes, processDataThroughPath, logNodeConnections, saveWorkflow, setError, isAiScraper]);
 
   const handleWorkspaceClick = useCallback(() => {
     navigate('/');
