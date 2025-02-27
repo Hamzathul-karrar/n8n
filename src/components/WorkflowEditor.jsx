@@ -228,7 +228,12 @@ export default function WorkflowEditor() {
         }
       }
     });
-  });
+}, [nodes, edges]);
+
+
+  const handleWorkspaceClick = useCallback(() => {
+    navigate('/');
+  }, [navigate]);
 
   return (
     <div style={{
