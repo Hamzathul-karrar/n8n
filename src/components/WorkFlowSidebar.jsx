@@ -41,11 +41,6 @@ const nodeTypes = [
     description: 'Store scraped data in an Excel file'
   },
   { 
-    type: 'Microsoft Excel', 
-    icon: TableChart,
-    description: 'Store scraped data in an Excel file'
-  },
-  { 
     type: 'Code', 
     icon: Code,
     description: 'Execute custom JavaScript Code'
