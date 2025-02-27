@@ -1,4 +1,3 @@
- 
 import { Paper, List, ListItem, ListItemText, ListItemIcon, Typography, TextField } from '@mui/material';
 import {
   Http,
@@ -14,6 +13,8 @@ import {
 } from '@mui/icons-material';
 import { useState } from 'react';
 
+// Define an array of node types with their properties (type, icon, and description)
+// This serves as the data source for the sidebar's draggable nodes
 const nodeTypes = [
   { 
     type: 'Chatbot', 
@@ -67,20 +68,27 @@ const nodeTypes = [
   },
 ];
 
+// Main WorkflowSidebar component that displays draggable workflow nodes
 export default function WorkflowSidebar() {
+  // State to manage the search input value
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Handler for when a node starts being dragged
+  // Sets the drag data with the node type and allows move effect
   const onDragStart = (event, nodeType) => {
     event.dataTransfer.setData('application/reactflow', nodeType);
     event.dataTransfer.effectAllowed = 'move';
   };
 
+  // Filter nodes based on search query
+  // Matches against both node type and description (case-insensitive)
   const filteredNodes = nodeTypes.filter(node =>
     node.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
     node.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
+    // Main sidebar container with custom styling
     <Paper 
       elevation={3}
       sx={{
@@ -88,10 +96,11 @@ export default function WorkflowSidebar() {
         height: '100%',
         overflow: 'auto',
         borderRadius: 0,
-        backgroundColor: '#2a2a2a',
+        backgroundColor: '#2a2a2a', // Dark theme background
         borderRight: '1px solid #444',
       }}
     >
+      {/* Sidebar header */}
       <Typography
         variant="h6"
         sx={{
@@ -105,6 +114,7 @@ export default function WorkflowSidebar() {
         Nodes
       </Typography>
 
+      {/* Search input field with custom styling for dark theme */}
       <TextField
         fullWidth
         variant="outlined"
@@ -120,7 +130,7 @@ export default function WorkflowSidebar() {
               borderColor: '#444',
             },
             '&:hover fieldset': {
-              borderColor: '#ff6d5a',
+              borderColor: '#ff6d5a', // Orange highlight on hover
             },
             '&.Mui-focused fieldset': {
               borderColor: '#ff6d5a',
@@ -135,7 +145,9 @@ export default function WorkflowSidebar() {
         }}
       />
 
+      {/* List of draggable nodes */}
       <List>
+        {/* Map through filtered nodes and create draggable items */}
         {filteredNodes.map((node) => {
           const Icon = node.icon;
           return (
@@ -156,9 +168,11 @@ export default function WorkflowSidebar() {
                 },
               }}
             >
+              {/* Node icon */}
               <ListItemIcon sx={{ color: '#ff6d5a' }}>
                 <Icon />
               </ListItemIcon>
+              {/* Node title and description */}
               <ListItemText 
                 primary={node.type} 
                 secondary={node.description}
