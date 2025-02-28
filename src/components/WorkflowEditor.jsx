@@ -143,7 +143,7 @@ export default function WorkflowEditor() {
         try {
             data = JSON.parse(responseText);
         } catch (error) {
-            console.warn("Response is not valid JSON. Treating as plain text.");
+            console.warn("Response is not valid JSON. Treating as plain text.",error);
             data = { message: responseText };
         }
 
@@ -571,6 +571,11 @@ const exportDataToExcel = async () => {
             }
         }
     });
+
+    // Use aiScraperNode later in your logic if needed
+    if (aiScraperNode) {
+        console.log("AI Scraper Node Found:", aiScraperNode);
+    }
 }, [nodes, edges, saveWorkflow, logNodeConnections, setError, executeAiScraper]);
 
 
