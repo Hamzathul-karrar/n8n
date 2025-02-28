@@ -17,6 +17,24 @@ export default function ClickTriggerNode({ data, id }) {
     setScheduleOutput(value);
   };
 
+  const executeNode = async () => {
+    try {
+      const config = JSON.parse(scheduleOutput);
+      if (Array.isArray(config) && config.length > 0) {
+        return config;
+      }
+      throw new Error('Invalid configuration format');
+    } catch (error) {
+      console.error('Error executing Click Trigger node:', error);
+      throw new Error('Failed to parse Click Trigger configuration');
+    }
+  };
+
+  // Attach the execute function to the node's data
+  if (data && !data.onExecute) {
+    data.onExecute = executeNode;
+  }
+
   return (
     <>
       <BaseNode 

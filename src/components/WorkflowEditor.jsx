@@ -240,6 +240,90 @@ export default function WorkflowEditor() {
     navigate('/');
   }, [navigate]);
 
+  const runWorkflow = useCallback(async () => {
+    // Find Click Trigger node
+    const clickTriggerNode = nodes.find(node => node.data.type === "Click Trigger");
+    if (!clickTriggerNode) {
+      setError("No Click Trigger node found in the workflow");
+      return;
+    }
+
+    // Check if Click Trigger has any outgoing connections
+    const hasOutgoingConnections = edges.some(edge => edge.source === clickTriggerNode.id);
+    if (!hasOutgoingConnections) {
+      setError("Click Trigger node must be connected to another node to execute");
+      return;
+    }
+
+    // Get all nodes connected to the Click Trigger node
+    const connectedNodes = [];
+    const visited = new Set();
+    
+    const traverse = (nodeId) => {
+      if (visited.has(nodeId)) return;
+      visited.add(nodeId);
+      
+      const node = nodes.find(n => n.id === nodeId);
+      if (node) connectedNodes.push(node);
+      
+      const outgoingEdges = edges.filter(edge => edge.source === nodeId);
+      outgoingEdges.forEach(edge => traverse(edge.target));
+    };
+
+    traverse(clickTriggerNode.id);
+
+    try {
+      // Get the path from Click Trigger to the end
+      const path = connectedNodes.map(node => node.id);
+      
+      // Get initial data from Click Trigger node
+      let initialData = null;
+      try {
+        if (clickTriggerNode.data.onExecute) {
+          initialData = await clickTriggerNode.data.onExecute();
+          console.log("Initial data from Click Trigger:", initialData);
+        }
+      } catch (error) {
+        console.error("Error getting data from Click Trigger:", error);
+        setError("Failed to get data from Click Trigger: " + error.message);
+        return;
+      }
+
+      // Execute the workflow using the Graph utility
+      const result = await graphRef.current.passData(
+        path,
+        initialData, // Pass the initial data from Click Trigger
+        async (nodeId, data, index) => {
+          const node = nodes.find(n => n.id === nodeId);
+          
+          // Skip the Click Trigger node since we already executed it
+          if (index === 0 && node.data.type === "Click Trigger") {
+            return data;
+          }
+
+          console.log(`Executing node ${node.data.type} with data:`, data);
+          
+          if (node?.data?.onExecute) {
+            const result = await node.data.onExecute(data);
+            console.log(`Node ${node.data.type} output:`, result);
+            return result;
+          }
+          return data;
+        }
+      );
+
+      if (result.success) {
+        setSuccess("Workflow executed successfully");
+        console.log("Final workflow result:", result.data);
+      } else {
+        setError(result.error || "Workflow execution failed");
+      }
+    } catch (error) {
+      console.error("Workflow execution error:", error);
+      setError("Failed to execute workflow: " + error.message);
+    }
+  }, [nodes, edges]);
+
   return (
     <div style={{
       width: '100%',
@@ -279,7 +363,7 @@ export default function WorkflowEditor() {
               startIcon={<PlayArrow />} 
               variant="contained" 
               color="primary"
-              onClick={saveWorkflow}
+              onClick={runWorkflow}
             >
               Run
             </Button>

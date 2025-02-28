@@ -6,14 +6,73 @@ import BaseNode from './BaseNode';
 export default function HttpRequestNode({ data, id }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({ 
-    method: 'POST',
+    method: 'GET',
     url: '',
-    authentication: 'None',
   });
 
   const handleFormChange = (event) => {
     setFormData({ ...formData, [event.target.name]: event.target.value });
   };
+
+  const executeNode = async (inputData) => {
+    try {
+      console.log('HTTP Request executing with input:', inputData);
+      
+      // If we have input data and URL contains placeholders, replace them
+      let url = formData.url;
+      if (inputData && typeof inputData === 'object') {
+        Object.entries(inputData).forEach(([key, value]) => {
+          url = url.replace(`\${${key}}`, value);
+        });
+      }
+
+      console.log('Making request to:', url);
+
+      const response = await fetch(url, {
+        method: formData.method,
+        headers: {
+          'Accept': 'application/json, text/plain, */*',
+          'Content-Type': 'application/json'
+        },
+        ...(formData.method !== 'GET' && inputData && { body: JSON.stringify(inputData) })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      // Check content type to determine how to parse the response
+      const contentType = response.headers.get('content-type');
+      let responseData;
+
+      if (contentType && contentType.includes('application/json')) {
+        responseData = await response.json();
+      } else if (contentType && contentType.includes('text/html')) {
+        const text = await response.text();
+        responseData = { html: text };
+      } else {
+        const text = await response.text();
+        try {
+          // Try to parse as JSON first
+          responseData = JSON.parse(text);
+        } catch {
+          // If not JSON, return as text
+          responseData = { text };
+        }
+      }
+
+      console.log('HTTP Request response:', responseData);
+      return responseData;
+    } catch (error) {
+      console.error('HTTP Request Error:', error);
+      throw new Error(`Failed to execute HTTP request: ${error.message}`);
+    }
+  };
+
+  // Attach the execute function to the node's data
+  if (data && !data.onExecute) {
+    data.onExecute = executeNode;
+  }
 
   return (
     <>
@@ -93,94 +152,6 @@ export default function HttpRequestNode({ data, id }) {
             }}
           />
 
-          <FormControl fullWidth margin="normal" sx={{ marginTop: '24px' }}>
-            <InputLabel id="auth-label" sx={{ color: '#888', '&.Mui-focused': { color: '#ff6d5a' } }}>
-              Authentication
-            </InputLabel>
-            <Select
-              labelId="auth-label"
-              name="authentication"
-              value={formData.authentication}
-              onChange={handleFormChange}
-              sx={{
-                color: '#fff',
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: '#444' },
-                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#666' },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#ff6d5a' }
-              }}
-            >
-              <MenuItem value="None">None</MenuItem>
-              <MenuItem value="Basic">Basic Auth</MenuItem>
-              <MenuItem value="Bearer">Bearer Token</MenuItem>
-            </Select>
-          </FormControl>
-
-          {formData.authentication === 'Basic' && (
-            <>
-              <TextField
-                fullWidth
-                margin="normal"
-                label="Username"
-                name="username"
-                sx={{
-                  marginTop: '24px',
-                  '& .MuiOutlinedInput-root': {
-                    color: '#fff',
-                    '& fieldset': { borderColor: '#444' },
-                    '&:hover fieldset': { borderColor: '#666' },
-                    '&.Mui-focused fieldset': { borderColor: '#ff6d5a' }
-                  },
-                  '& .MuiInputLabel-root': {
-                    color: '#888',
-                    '&.Mui-focused': { color: '#ff6d5a' }
-                  }
-                }}
-              />
-              <TextField
-                fullWidth
-                margin="normal"
-                type="password"
-                label="Password"
-                name="password"
-                sx={{
-                  marginTop: '12px',
-                  '& .MuiOutlinedInput-root': {
-                    color: '#fff',
-                    '& fieldset': { borderColor: '#444' },
-                    '&:hover fieldset': { borderColor: '#666' },
-                    '&.Mui-focused fieldset': { borderColor: '#ff6d5a' }
-                  },
-                  '& .MuiInputLabel-root': {
-                    color: '#888',
-                    '&.Mui-focused': { color: '#ff6d5a' }
-                  }
-                }}
-              />
-            </>
-          )}
-
-          {formData.authentication === 'Bearer' && (
-            <TextField
-              fullWidth
-              margin="normal"
-              label="Token"
-              name="token"
-              sx={{
-                marginTop: '24px',
-                '& .MuiOutlinedInput-root': {
-                  color: '#fff',
-                  '& fieldset': { borderColor: '#444' },
-                  '&:hover fieldset': { borderColor: '#666' },
-                  '&.Mui-focused fieldset': { borderColor: '#ff6d5a' }
-                },
-                '& .MuiInputLabel-root': {
-                  color: '#888',
-                  '&.Mui-focused': { color: '#ff6d5a' }
-                }
-              }}
-            />
-          )}
-
           <Button
             variant="contained"
             onClick={() => setIsDialogOpen(false)}
@@ -205,6 +176,7 @@ HttpRequestNode.propTypes = {
     label: PropTypes.string.isRequired,
     type: PropTypes.string.isRequired,
     onDelete: PropTypes.func.isRequired,
+    onExecute: PropTypes.func,
   }).isRequired,
   id: PropTypes.string.isRequired,
 }; 
