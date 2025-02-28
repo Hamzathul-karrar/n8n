@@ -353,8 +353,7 @@ const exportDataToExcel = async () => {
     [reactFlowInstance, setNodes, onNodeDelete]
   );
 
-  
-
+  // Add this new function to log node connections
   const logNodeConnections = useCallback(() => {
     console.group('🔍 Node Connections:');
     
@@ -405,7 +404,7 @@ const exportDataToExcel = async () => {
   }, [nodes, edges]);
 
   // Modify the processDataThroughPath function to include detailed logging
-  const processDataThroughPath = async (sourceId, targetId, initialData) => {
+  const processDataThroughPath = useCallback(async (sourceId, targetId, initialData) => {
     setProcessedPath(null);
     setError(null);
 
@@ -507,7 +506,7 @@ const exportDataToExcel = async () => {
       setError(error.message);
       return null;
     }
-  };
+  }, [nodes, edges, graph]);
 
   // Modify the runWorkflow function to include auto-save
   const runWorkflow = useCallback(async () => {
