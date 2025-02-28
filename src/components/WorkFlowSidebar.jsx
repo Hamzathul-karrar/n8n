@@ -1,31 +1,17 @@
 import { Paper, List, ListItem, ListItemText, ListItemIcon, Typography, TextField } from '@mui/material';
 import {
   Http,
-  Schedule,
+  TouchApp,
   Code,
-  Email,
-  Storage,
-  Functions,
-  CloudQueue,
-  SmartToy,  // Chatbot icon
-  Search,    // AI Scraper icon
-  TableChart // Excel Sheet icon
+  SmartToy,
+  Search,
+  TableChart,
+  Chat
 } from '@mui/icons-material';
 import { useState } from 'react';
 
 // Define an array of node types with their properties (type, icon, and description)
-// This serves as the data source for the sidebar's draggable nodes
 const nodeTypes = [
-  { 
-    type: 'Chatbot', 
-    icon: SmartToy,
-    description: 'Interact with users and process conversations'
-  },
-  { 
-    type: 'AI Scraper', 
-    icon: Search,
-    description: 'Scrape business data based on user input'
-  },
   { 
     type: 'HTTP Request', 
     icon: Http,
@@ -33,39 +19,34 @@ const nodeTypes = [
   },
   { 
     type: 'Click Trigger', 
-    icon: Schedule,
-    description: 'Trigger workflows with a test button click'
-  },
-  { 
-    type: 'Microsoft Excel', 
-    icon: TableChart,
-    description: 'Store scraped data in an Excel file'
+    icon: TouchApp,
+    description: 'Trigger workflows with a button click'
   },
   { 
     type: 'Code', 
     icon: Code,
-    description: 'Execute custom JavaScript Code'
-  },
-  { 
-    type: 'Email', 
-    icon: Email,
-    description: 'Send and process email communications'
-  },
-  { 
-    type: 'Database', 
-    icon: Storage,
-    description: 'Interact with databases and storage systems'
-  },
-  { 
-    type: 'Function', 
-    icon: Functions,
-    description: 'Create custom function nodes for specific tasks'
+    description: 'Execute custom JavaScript code'
   },
   { 
     type: 'Chat Bot', 
-    icon: CloudQueue,
-    description: 'Connect and integrate with external APIs'
+    icon: SmartToy,
+    description: 'Process conversations with AI'
   },
+  { 
+    type: 'Chat Trigger', 
+    icon: Chat,
+    description: 'Trigger chat-based workflows'
+  },
+  { 
+    type: 'Microsoft Excel', 
+    icon: TableChart,
+    description: 'Store and process Excel data'
+  },
+  { 
+    type: 'AI Scraper', 
+    icon: Search,
+    description: 'Scrape and process data using AI'
+  }
 ];
 
 // Main WorkflowSidebar component that displays draggable workflow nodes
