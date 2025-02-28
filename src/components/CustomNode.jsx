@@ -6,8 +6,24 @@ import ChatBotNode from './nodes/ChatBotNode';
 import ChatTriggerNode from './nodes/ChatTriggerNode';
 import ExcelNode from './nodes/ExcelNode';
 import AiScraperNode from './nodes/AiScraperNode';
+import { useReactFlow } from 'reactflow';
 
 export default function CustomNode({ data, id }) {
+  const { getEdges, getNodes } = useReactFlow();
+
+  const isConnectedToAiScraper = (nodeId) => {
+    const edges = getEdges();
+    const nodes = getNodes();
+    
+    return edges.some(edge => {
+      const connectedNode = nodes.find(n => 
+        (edge.source === nodeId && n.id === edge.target) || 
+        (edge.target === nodeId && n.id === edge.source)
+      );
+      return connectedNode?.data?.type === 'AI Scraper';
+    });
+  };
+
   const renderNode = () => {
     switch (data.type) {
       case "HTTP Request":
@@ -19,7 +35,16 @@ export default function CustomNode({ data, id }) {
       case "Chat Bot":
         return <ChatBotNode data={data} id={id} />;
       case "Chat Trigger":
-        return <ChatTriggerNode data={data} id={id} />;
+        return (
+          <ChatTriggerNode 
+            data={{
+              ...data,
+              onExecuteAiScraper: data.onExecuteAiScraper
+            }} 
+            id={id}
+            isConnectedToAiScraper={isConnectedToAiScraper(id)}
+          />
+        );
       case "Microsoft Excel":
         return <ExcelNode data={data} id={id} />;
       case "AI Scraper":
@@ -37,6 +62,7 @@ CustomNode.propTypes = {
     label: PropTypes.string.isRequired,
     type: PropTypes.string.isRequired,
     onDelete: PropTypes.func.isRequired,
+    onExecuteAiScraper: PropTypes.func,
   }).isRequired,
   id: PropTypes.string.isRequired,
 };

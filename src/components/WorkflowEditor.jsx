@@ -11,7 +11,9 @@ import { AppBar, Toolbar, Typography, Button, Stack, Snackbar, Alert } from '@mu
 import { PlayArrow, Save, WorkspacesOutlined } from '@mui/icons-material';
 // import PropTypes from 'prop-types';
 import 'reactflow/dist/style.css';
+import 'reactflow/dist/base.css';
 import '../styles/workflow.css';
+import '../styles/reactflow.css';
 import CustomNode from './CustomNode';
 import Sidebar from './WorkFlowSidebar';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -35,11 +37,11 @@ export default function WorkflowEditor() {
   const edgesRef = useRef(edges);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
-  const [processedPath, setProcessedPath] = useState(null);
-  const [graph, setGraph] = useState(() => Graph.fromEdges(initialEdges));
+  const graphRef = useRef(Graph.fromEdges(initialEdges));
 
   useEffect(() => {
     console.log("📡 Edges Updated: ", edges);
+    graphRef.current = Graph.fromEdges(edges);
   }, [edges]);
 
   useEffect(() => {
@@ -49,6 +51,33 @@ export default function WorkflowEditor() {
   useEffect(() => {
     edgesRef.current = edges;
   }, [edges]);
+
+  const executeAiScraper = useCallback(async (businessType, location) => {
+    try {
+      console.log(`Executing AI Scraper for: ${businessType} in ${location}`);
+      const response = await fetch(
+        `http://localhost:8080/api/scrape?businessType=${businessType}&location=${location}`,
+        {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+          mode: 'cors',
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Scraped Data:', data);
+      setSuccess('Scraping completed successfully');
+      return data;
+    } catch (error) {
+      console.error('Scraper Error:', error);
+      setError('Failed to execute scraping');
+      throw error;
+    }
+  }, []);
 
   const onNodeDelete = useCallback((nodeId) => {
     setNodes((nodes) => nodes.filter((node) => node.id !== nodeId));
@@ -88,7 +117,7 @@ export default function WorkflowEditor() {
   // Update graph when edges change
   useEffect(() => {
     const newGraph = Graph.fromEdges(edges);
-    setGraph(newGraph);
+    graphRef.current = newGraph;
   }, [edges]);
 
   const saveWorkflow = useCallback(() => {
@@ -197,12 +226,14 @@ export default function WorkflowEditor() {
           label: type, 
           type: type,
           onDelete: onNodeDelete,
+          onExecute: type.replace(/\s+/g, "").toLowerCase() === 'aiscraper' ? executeAiScraper : null,
+          onExecuteAiScraper: type === 'Chat Trigger' ? executeAiScraper : null,
         },
       };
 
       setNodes((nds) => nds.concat(newNode));
     },
-    [reactFlowInstance, setNodes, onNodeDelete]
+    [reactFlowInstance, setNodes, onNodeDelete, executeAiScraper]
   );
 
   const handleWorkspaceClick = useCallback(() => {
@@ -258,16 +289,18 @@ export default function WorkflowEditor() {
       <div style={{ 
         display: 'flex', 
         flex: 1,
-        overflow: 'hidden'
+        overflow: 'hidden',
+        backgroundColor: '#1a1a1a',
+        height: 'calc(100vh - 64px)'
       }}>
         <Sidebar />
-        <div style={{ flex: 1, position: 'relative' }}>
-          <ReactFlow 
+        <div style={{ flex: 1, position: 'relative', height: '100%' }}>
+          <ReactFlow
             nodes={nodes.map(node => ({
               ...node,
               style: {
                 ...node.style,
-                ...(processedPath?.includes(node.id) && {
+                ...(graphRef.current.processedPath?.includes(node.id) && {
                   border: '2px solid #ff6d5a',
                   boxShadow: '0 0 10px rgba(255, 109, 90, 0.5)'
                 })
@@ -277,7 +310,7 @@ export default function WorkflowEditor() {
               ...edge,
               style: {
                 ...edge.style,
-                ...(processedPath?.includes(edge.source) && processedPath.includes(edge.target) && {
+                ...(graphRef.current.processedPath?.includes(edge.source) && graphRef.current.processedPath.includes(edge.target) && {
                   stroke: '#ff6d5a',
                   strokeWidth: 3,
                   animation: 'flowAnimation 1s infinite'
