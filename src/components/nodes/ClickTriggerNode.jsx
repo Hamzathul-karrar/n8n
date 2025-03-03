@@ -117,6 +117,7 @@ ClickTriggerNode.propTypes = {
     label: PropTypes.string.isRequired,
     type: PropTypes.string.isRequired,
     onDelete: PropTypes.func.isRequired,
+    onExecute: PropTypes.func,
   }).isRequired,
   id: PropTypes.string.isRequired,
 }; 
