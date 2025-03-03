@@ -38,6 +38,7 @@ export default function WorkflowEditor() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const graphRef = useRef(Graph.fromEdges(initialEdges));
+  const [nodeCallbacks, setNodeCallbacks] = useState({});
 
   useEffect(() => {
     console.log("📡 Edges Updated: ", edges);
@@ -68,14 +69,37 @@ export default function WorkflowEditor() {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
 
-      const data = await response.json();
-      console.log('Scraped Data:', data);
+      const responseText = await response.text();
+      console.log("📥 Raw Response:", responseText);
+      
+      // Create a structured response object
+      let scrapedData;
+      try {
+        scrapedData = JSON.parse(responseText);
+      } catch {
+        // If not JSON, create a formatted response object
+        scrapedData = {
+          status: 'success',
+          message: responseText,
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      console.log('Processed Scraped Data:', scrapedData);
       setSuccess('Scraping completed successfully');
-      return data;
+      return scrapedData;
+
     } catch (error) {
       console.error('Scraper Error:', error);
       setError('Failed to execute scraping');
-      throw error;
+      
+      // Return structured error object
+      const errorData = {
+        status: 'error',
+        error: error.message,
+        timestamp: new Date().toISOString()
+      };
+      throw errorData;
     }
   }, []);
 
@@ -206,6 +230,42 @@ export default function WorkflowEditor() {
     event.dataTransfer.dropEffect = 'move';
   }, []);
 
+  const registerCallback = useCallback((nodeType, callback) => {
+    console.log(`Registering callback for ${nodeType}`, callback);
+    setNodeCallbacks(prev => ({
+      ...prev,
+      [nodeType]: callback
+    }));
+  }, []);
+
+  const getChatCallback = useCallback((nodeType) => {
+    console.log(`Getting callback for ${nodeType}`, nodeCallbacks[nodeType]);
+    return nodeCallbacks[nodeType];
+  }, [nodeCallbacks]);
+
+  const handleAiScraper = useCallback(async () => {
+    try {
+      // Get the chat callback
+      const askQuestion = getChatCallback('ChatTrigger');
+      if (!askQuestion) {
+        throw new Error('Chat Trigger not connected or callback not registered');
+      }
+
+      // Ask questions through chat
+      const businessType = await askQuestion('What type of business are you looking for?');
+      if (!businessType) throw new Error('Business type is required');
+
+      const location = await askQuestion('Where would you like to search?');
+      if (!location) throw new Error('Location is required');
+
+      // Execute the scraping
+      return executeAiScraper(businessType, location);
+    } catch (error) {
+      console.error('AI Scraper Error:', error);
+      throw error;
+    }
+  }, [getChatCallback, executeAiScraper]);
+
   const onDrop = useCallback(
     (event) => {
       event.preventDefault();
@@ -218,110 +278,133 @@ export default function WorkflowEditor() {
         y: event.clientY,
       });
 
+      // Create node data based on type
+      let nodeData = {
+        label: type,
+        type: type,
+        onDelete: onNodeDelete,
+        registerCallback: registerCallback,
+        getChatCallback: getChatCallback,
+      };
+
+      // Add specific properties based on node type
+      if (type === 'AI Scraper') {
+        nodeData = {
+          ...nodeData,
+          onExecute: handleAiScraper
+        };
+      }
+
       const newNode = {
         id: `node_${Date.now()}`,
         type: 'custom',
         position,
-        data: { 
-          label: type, 
-          type: type,
-          onDelete: onNodeDelete,
-          onExecute: type.replace(/\s+/g, "").toLowerCase() === 'aiscraper' ? executeAiScraper : null,
-          onExecuteAiScraper: type === 'Chat Trigger' ? executeAiScraper : null,
-        },
+        data: nodeData,
       };
 
+      console.log('Creating new node:', newNode);
       setNodes((nds) => nds.concat(newNode));
     },
-    [reactFlowInstance, setNodes, onNodeDelete, executeAiScraper]
+    [reactFlowInstance, setNodes, onNodeDelete, registerCallback, getChatCallback, handleAiScraper]
   );
 
   const handleWorkspaceClick = useCallback(() => {
     navigate('/');
   }, [navigate]);
 
-  const runWorkflow = useCallback(async () => {
-    // Find Click Trigger node
-    const clickTriggerNode = nodes.find(node => node.data.type === "Click Trigger");
-    if (!clickTriggerNode) {
-      setError("No Click Trigger node found in the workflow");
-      return;
-    }
-
-    // Check if Click Trigger has any outgoing connections
-    const hasOutgoingConnections = edges.some(edge => edge.source === clickTriggerNode.id);
-    if (!hasOutgoingConnections) {
-      setError("Click Trigger node must be connected to another node to execute");
-      return;
-    }
-
-    // Get all nodes connected to the Click Trigger node
-    const connectedNodes = [];
-    const visited = new Set();
+  // const runWorkflow = useCallback(async () => {
+  //   console.group('🚀 Running Workflow');
     
-    const traverse = (nodeId) => {
-      if (visited.has(nodeId)) return;
-      visited.add(nodeId);
-      
-      const node = nodes.find(n => n.id === nodeId);
-      if (node) connectedNodes.push(node);
-      
-      const outgoingEdges = edges.filter(edge => edge.source === nodeId);
-      outgoingEdges.forEach(edge => traverse(edge.target));
-    };
+  //   try {
+  //     // Find Chat Trigger node
+  //     const chatTriggerNode = nodes.find(node => 
+  //       node.data.type === "Chat Trigger"
+  //     );
 
-    traverse(clickTriggerNode.id);
+  //     if (!chatTriggerNode) {
+  //       throw new Error("Chat Trigger node not found");
+  //     }
 
+  //     // Find AI Scraper node
+  //     const aiScraperNode = nodes.find(node => 
+  //       node.data.type === "AI Scraper"
+  //     );
+
+  //     if (!aiScraperNode) {
+  //       console.log("Available nodes:", nodes.map(n => ({ id: n.id, type: n.data.type })));
+  //       throw new Error("AI Scraper node not found");
+  //     }
+
+  //     // Check if they're connected
+  //     const isConnected = edges.some(edge => 
+  //       (edge.source === chatTriggerNode.id && edge.target === aiScraperNode.id) ||
+  //       (edge.source === aiScraperNode.id && edge.target === chatTriggerNode.id)
+  //     );
+
+  //     if (!isConnected) {
+  //       throw new Error("Chat Trigger and AI Scraper must be connected");
+  //     }
+
+  //     console.log("Starting workflow execution...");
+  //     console.log("Registered callbacks:", nodeCallbacks);
+
+  //     // Execute the AI Scraper
+  //     if (aiScraperNode.data.onExecute) {
+  //       await aiScraperNode.data.onExecute();
+  //     } else {
+  //       throw new Error("AI Scraper node has no execute function");
+  //     }
+
+  //   } catch (error) {
+  //     console.error('Workflow Error:', error);
+  //     setError(error.message);
+  //   }
+  //   console.groupEnd();
+  // }, [nodes, edges, nodeCallbacks]);
+  const runWorkflow = useCallback(async () => {
+    console.group('🚀 Running Workflow');
+    
     try {
-      // Get the path from Click Trigger to the end
-      const path = connectedNodes.map(node => node.id);
-      
-      // Get initial data from Click Trigger node
-      let initialData = null;
-      try {
-        if (clickTriggerNode.data.onExecute) {
-          initialData = await clickTriggerNode.data.onExecute();
-          console.log("Initial data from Click Trigger:", initialData);
+      // Find ClickTriggerNode or ChatTriggerNode
+      const clickTriggerNode = nodes.find(node => node.data.type === "Click Trigger");
+      const chatTriggerNode = nodes.find(node => node.data.type === "Chat Trigger");
+  
+      let inputData;
+  
+      // Use ClickTriggerNode if available
+      if (clickTriggerNode) {
+        inputData = await clickTriggerNode.data.onExecute();
+        if (!inputData || !Array.isArray(inputData)) {
+          throw new Error("Invalid input data from Click Trigger");
         }
-      } catch (error) {
-        console.error("Error getting data from Click Trigger:", error);
-        setError("Failed to get data from Click Trigger: " + error.message);
-        return;
+        inputData = inputData[0]; // Use the first configuration
       }
-
-      // Execute the workflow using the Graph utility
-      const result = await graphRef.current.passData(
-        path,
-        initialData, // Pass the initial data from Click Trigger
-        async (nodeId, data, index) => {
-          const node = nodes.find(n => n.id === nodeId);
-          
-          // Skip the Click Trigger node since we already executed it
-          if (index === 0 && node.data.type === "Click Trigger") {
-            return data;
-          }
-
-          console.log(`Executing node ${node.data.type} with data:`, data);
-          
-          if (node?.data?.onExecute) {
-            const result = await node.data.onExecute(data);
-            console.log(`Node ${node.data.type} output:`, result);
-            return result;
-          }
-          return data;
-        }
-      );
-
-      if (result.success) {
-        setSuccess("Workflow executed successfully");
-        console.log("Final workflow result:", result.data);
+      // Use ChatTriggerNode if ClickTriggerNode is not available
+      else if (chatTriggerNode) {
+        // No input data needed, as ChatTriggerNode will prompt the user
+        inputData = null;
       } else {
-        setError(result.error || "Workflow execution failed");
+        throw new Error("No trigger node (Click Trigger or Chat Trigger) found");
       }
+  
+      // Find AiScraperNode
+      const aiScraperNode = nodes.find(node => node.data.type === "AI Scraper");
+      if (!aiScraperNode) {
+        throw new Error("AI Scraper node not found");
+      }
+  
+      // Execute AiScraperNode with input data
+      if (typeof aiScraperNode.data.onExecute === "function") {
+        await aiScraperNode.data.onExecute(inputData);
+      } else {
+        throw new Error("AI Scraper node has no execute function");
+      }
+  
     } catch (error) {
-      console.error("Workflow execution error:", error);
-      setError("Failed to execute workflow: " + error.message);
+      console.error('Workflow Error:', error);
+      setError(error.message);
     }
+    console.groupEnd();
   }, [nodes, edges]);
 
   return (
@@ -416,8 +499,7 @@ export default function WorkflowEditor() {
             fitView
             style={{ background: '#1a1a1a' }}
           >
-            <Background color="#333" />
-            <Controls 
+             <Controls 
               style={{ 
                 button: { backgroundColor: '#2a2a2a', color: '#fff' },
                 path: { fill: '#ff6d5a' }
