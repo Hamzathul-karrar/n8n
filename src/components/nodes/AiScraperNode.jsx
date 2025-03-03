@@ -67,7 +67,7 @@ export default function AiScraperNode({ data, id }) {
         onDoubleClick={() => setIsDialogOpen(true)}
       >
         <Typography style={{ color: '#bbb', fontSize: '0.875rem' }}>
-          {isProcessing ? 'Scraping...' : 'Ready to scrape'}
+          AI Scraper Node
         </Typography>
       </BaseNode>
 

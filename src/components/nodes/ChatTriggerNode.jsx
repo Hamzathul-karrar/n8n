@@ -37,7 +37,7 @@ export default function ChatTriggerNode({ data, id, isConnectedToAiScraper }) {
         onDoubleClick={() => setIsDialogOpen(true)}
       >
         <Typography style={{ color: '#bbb', fontSize: '0.875rem' }}>
-          {isConnectedToAiScraper ? 'Connected to AI Scraper' : 'Configure trigger'}
+          Chat Trigger Node
         </Typography>
       </BaseNode>
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Dialog, DialogTitle, DialogContent, Box, Button, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, Box, Button, FormControl, InputLabel, Select, MenuItem, Typography } from '@mui/material';
 import PropTypes from 'prop-types';
 import MonacoEditor from '@monaco-editor/react';
 import BaseNode from './BaseNode';
@@ -25,7 +25,11 @@ return urls.map(url => {
         data={data} 
         id={id}
         onDoubleClick={() => setIsDialogOpen(true)}
-      />
+      >
+        <Typography style={{ color: '#bbb', fontSize: '0.875rem' }}>
+          Code Node
+        </Typography>
+      </BaseNode>
 
       <Dialog 
         open={isDialogOpen} 

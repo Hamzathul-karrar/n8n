@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Dialog, DialogTitle, DialogContent, Box, Button } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, Box, Button,Typography } from '@mui/material';
 import PropTypes from 'prop-types';
 import MonacoEditor from '@monaco-editor/react';
 import BaseNode from './BaseNode';
@@ -42,7 +42,11 @@ export default function ClickTriggerNode({ data, id }) {
         id={id}
         showInputHandle={false}
         onDoubleClick={() => setIsDialogOpen(true)}
-      />
+      >
+        <Typography style={{ color: '#bbb', fontSize: '0.875rem' }}>
+          Click Trigger Node
+        </Typography>
+      </BaseNode>
 
       <Dialog 
         open={isDialogOpen} 

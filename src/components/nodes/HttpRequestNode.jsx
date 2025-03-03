@@ -82,7 +82,7 @@ export default function HttpRequestNode({ data, id }) {
         onDoubleClick={() => setIsDialogOpen(true)}
       >
         <Typography style={{ color: '#bbb', fontSize: '0.875rem' }}>
-          {formData.method} {formData.url}
+          HTTP Request Node
         </Typography>
       </BaseNode>
 

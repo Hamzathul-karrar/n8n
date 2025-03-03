@@ -77,8 +77,11 @@ export default function ChatBotNode({ data, id }) {
       <BaseNode 
         data={data} 
         id={id}
-        onDoubleClick={() => setIsDialogOpen(true)}
-      />
+        onDoubleClick={() => setIsDialogOpen(true)}>
+          <Typography style={{ color: '#bbb', fontSize: '0.875rem' }}>
+          Chat Bot Node
+        </Typography>
+        </BaseNode>
 
       <Dialog
         open={isDialogOpen}
