@@ -232,11 +232,15 @@ export default function WorkflowEditor() {
   }, []);
 
   const registerCallback = useCallback((nodeType, callback) => {
-    console.log(`Registering callback for ${nodeType}`, callback);
-    setNodeCallbacks(prev => ({
-      ...prev,
-      [nodeType]: callback
-    }));
+    console.log(`Registering callback for ${nodeType}:`, callback);
+    setNodeCallbacks(prev => {
+      const newCallbacks = {
+        ...prev,
+        [nodeType]: callback
+      };
+      console.log('Updated callbacks:', newCallbacks);
+      return newCallbacks;
+    });
   }, []);
 
   const getChatCallback = useCallback((nodeType) => {
@@ -244,28 +248,110 @@ export default function WorkflowEditor() {
     return nodeCallbacks[nodeType];
   }, [nodeCallbacks]);
 
-  const handleAiScraper = useCallback(async () => {
+  const handleAiScraper = useCallback(async (inputData) => {
+    console.group('🤖 AI Scraper Execution');
     try {
-      // Get the chat callback
-      const askQuestion = getChatCallback('ChatTrigger');
-      if (!askQuestion) {
-        throw new Error('Chat Trigger not connected or callback not registered');
+      const currentNodes = nodesRef.current;
+      const currentEdges = edgesRef.current;
+
+      const aiScraperNode = currentNodes.find(n => n.data.type === "AI Scraper");
+      if (!aiScraperNode) {
+        throw new Error("AI Scraper node not found");
       }
 
-      // Ask questions through chat
-      const businessType = await askQuestion('What type of business are you looking for?');
-      if (!businessType) throw new Error('Business type is required');
+      const connectedTrigger = currentEdges.find(edge => edge.target === aiScraperNode.id);
+      console.log('Connected edges:', currentEdges);
+      console.log('AI Scraper node:', aiScraperNode);
+      console.log('Connected trigger:', connectedTrigger);
 
-      const location = await askQuestion('Where would you like to search?');
-      if (!location) throw new Error('Location is required');
+      if (!connectedTrigger) {
+        throw new Error("No trigger connected to AI Scraper");
+      }
 
-      // Execute the scraping
-      return executeAiScraper(businessType, location);
+      const triggerNode = currentNodes.find(node => node.id === connectedTrigger.source);
+      if (!triggerNode) {
+        throw new Error("Connected trigger node not found");
+      }
+
+      let businessType, location;
+
+      if (triggerNode.data.type === "Click Trigger") {
+        if (!inputData || !Array.isArray(inputData) || !inputData.length) {
+          throw new Error("Invalid input from Click Trigger");
+        }
+        console.log('Using input from Click Trigger:', inputData[0]);
+        businessType = inputData[0].businessType;
+        location = inputData[0].location;
+      } 
+      else if (triggerNode.data.type === "Chat Trigger") {
+        // Get the current callbacks state
+        const currentCallbacks = nodeCallbacks;
+        console.log('Current callbacks:', currentCallbacks);
+        
+        const chatCallback = currentCallbacks['ChatTrigger'];
+        console.log('Chat callback:', chatCallback);
+        
+        if (!chatCallback) {
+          throw new Error('Chat Trigger callback not registered');
+        }
+
+        console.log('Using Chat Trigger for input');
+        businessType = await chatCallback('What type of business are you looking for?');
+        if (!businessType) throw new Error('Business type is required');
+
+        location = await chatCallback('Where would you like to search?');
+        if (!location) throw new Error('Location is required');
+      }
+      else {
+        throw new Error(`Unknown trigger type: ${triggerNode.data.type}`);
+      }
+
+      console.log(`Executing scraper with: ${businessType} in ${location}`);
+      const result = await executeAiScraper(businessType, location);
+
+      // Check if Excel node is connected and download if needed
+      const excelNode = currentNodes.find(node => 
+        node.data.type === "Microsoft Excel" && 
+        currentEdges.some(edge => edge.source === aiScraperNode.id && edge.target === node.id)
+      );
+
+      if (excelNode) {
+        console.log("📊 Excel node is connected, downloading data...");
+        try {
+          const response = await fetch('http://localhost:8080/api/excel/download', {
+            method: 'GET',
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to download Excel file');
+          }
+
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'scraped_data.xlsx';
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+
+          setSuccess('Excel file downloaded successfully');
+        } catch (error) {
+          console.error('Excel download error:', error);
+          setError('Failed to download Excel file');
+        }
+      }
+
+      return result;
     } catch (error) {
       console.error('AI Scraper Error:', error);
+      setError(error.message);
       throw error;
+    } finally {
+      console.groupEnd();
     }
-  }, [getChatCallback, executeAiScraper]);
+  }, [nodeCallbacks, executeAiScraper]);
 
   const onDrop = useCallback(
     (event) => {
@@ -292,7 +378,7 @@ export default function WorkflowEditor() {
       if (type === 'AI Scraper') {
         nodeData = {
           ...nodeData,
-          onExecute: handleAiScraper
+          onExecute: handleAiScraper.bind(null) // Bind handleAiScraper properly
         };
       }
 
@@ -317,47 +403,45 @@ export default function WorkflowEditor() {
     console.group('🚀 Running Workflow');
     
     try {
-      // Find ClickTriggerNode or ChatTriggerNode
-      const clickTriggerNode = nodes.find(node => node.data.type === "Click Trigger");
-      const chatTriggerNode = nodes.find(node => node.data.type === "Chat Trigger");
-  
-      let inputData;
-  
-      // Use ClickTriggerNode if available
-      if (clickTriggerNode) {
-        inputData = await clickTriggerNode.data.onExecute();
-        if (!inputData || !Array.isArray(inputData)) {
-          throw new Error("Invalid input data from Click Trigger");
-        }
-        inputData = inputData[0]; // Use the first configuration
-      }
-      // Use ChatTriggerNode if ClickTriggerNode is not available
-      else if (chatTriggerNode) {
-        // No input data needed, as ChatTriggerNode will prompt the user
-        inputData = null;
-      } else {
-        throw new Error("No trigger node (Click Trigger or Chat Trigger) found");
-      }
-  
-      // Find AiScraperNode
       const aiScraperNode = nodes.find(node => node.data.type === "AI Scraper");
       if (!aiScraperNode) {
         throw new Error("AI Scraper node not found");
       }
-  
-      // Execute AiScraperNode with input data
-      if (typeof aiScraperNode.data.onExecute === "function") {
-        await aiScraperNode.data.onExecute(inputData);
-      } else {
-        throw new Error("AI Scraper node has no execute function");
+
+      const connectedTrigger = edges.find(edge => edge.target === aiScraperNode.id);
+      console.log('Current edges:', edges);
+      console.log('AI Scraper node:', aiScraperNode);
+      console.log('Connected trigger:', connectedTrigger);
+
+      if (!connectedTrigger) {
+        throw new Error("No trigger connected to AI Scraper");
       }
-  
+
+      const triggerNode = nodes.find(node => node.id === connectedTrigger.source);
+      if (!triggerNode) {
+        throw new Error("Connected trigger node not found");
+      }
+
+      console.log("Connected trigger type:", triggerNode.data.type);
+      console.log("Available callbacks:", nodeCallbacks);
+
+      if (triggerNode.data.type === "Click Trigger") {
+        const clickTriggerData = await triggerNode.data.onExecute();
+        await aiScraperNode.data.onExecute(clickTriggerData);
+      } 
+      else if (triggerNode.data.type === "Chat Trigger") {
+        await aiScraperNode.data.onExecute(null, nodeCallbacks);
+      }
+      else {
+        throw new Error("Unknown trigger type");
+      }
+
     } catch (error) {
       console.error('Workflow Error:', error);
       setError(error.message);
     }
     console.groupEnd();
-  }, [nodes, edges]);
+  }, [nodes, edges, nodeCallbacks]);
 
   const toggleChat = useCallback(() => {
     setIsChatOpen(prev => !prev);
