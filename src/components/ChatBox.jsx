@@ -7,7 +7,7 @@ import {
   IconButton,
   Typography,
   Stack,
-  Slide,
+  Modal,
   CircularProgress,
 } from '@mui/material';
 import {
@@ -16,72 +16,19 @@ import {
 } from '@mui/icons-material';
 import { geminiService } from '../services/gemini.service';
 
-export default function ChatBox({ open, onClose, nodes, edges, workflow }) {
+export default function ChatBox({ open, onClose }) {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
 
   useEffect(() => {
     if (open && messages.length === 0) {
-      const workflowName = workflow?.projectName || 'Current Workflow';
-      const nodeCount = nodes?.length || 0;
-      const edgeCount = edges?.length || 0;
-
       setMessages([{
-        text: `Hi! I'm here to help you with "${workflowName}"\n\nCurrent workflow status:\n- ${nodeCount} nodes\n- ${edgeCount} connections\n\nHow can I assist you with your workflow?`,
+        text: "Hi! I'm your AI assistant. How can I help you today?",
         sender: 'bot'
       }]);
     }
-  }, [open, workflow, nodes, edges]);
-
-  const getChatbotResponse = async (userMessage) => {
-    try {
-      setIsTyping(true);
-
-      // Add workflow context to every message
-      const workflowContext = {
-        workflowId: workflow?.id,
-        workflowName: workflow?.projectName,
-        nodeCount: nodes?.length || 0,
-        edgeCount: edges?.length || 0,
-        lastModified: workflow?.lastModified,
-        nodes: nodes?.map(node => ({
-          id: node.id,
-          type: node.type,
-          data: node.data
-        })),
-        edges: edges
-      };
-
-      // Check for specific workflow-related queries
-      if (userMessage.toLowerCase().includes('analyze workflow') || 
-          userMessage.toLowerCase().includes('check workflow')) {
-        return await geminiService.analyzeWorkflow(workflowContext);
-      }
-
-      if (userMessage.toLowerCase().includes('suggest') || 
-          userMessage.toLowerCase().includes('what next') ||
-          userMessage.toLowerCase().includes('recommend')) {
-        return await geminiService.getNodeSuggestions(workflowContext.nodes);
-      }
-
-      if (userMessage.toLowerCase().includes('error') || 
-          userMessage.toLowerCase().includes('problem') ||
-          userMessage.toLowerCase().includes('not working')) {
-        const context = `Workflow: ${workflowContext.workflowName}\nNodes: ${workflowContext.nodeCount}\nConnections: ${workflowContext.edgeCount}`;
-        return await geminiService.getTroubleshootingHelp(userMessage, context);
-      }
-
-      // Add workflow context to the message
-      const messageWithContext = `[Workflow: ${workflowContext.workflowName}] ${userMessage}`;
-      return await geminiService.generateResponse(messageWithContext, messages);
-    } catch (error) {
-      console.error('Chatbot Error:', error);
-      return "I apologize, but I'm having trouble connecting to the AI service. Please try again later.";
-    } finally {
-      setIsTyping(false);
-    }
-  };
+  }, [open]);
 
   const handleSend = async () => {
     if (message.trim()) {
@@ -93,11 +40,21 @@ export default function ChatBox({ open, onClose, nodes, edges, workflow }) {
         sender: 'user' 
       }]);
 
-      const botResponse = await getChatbotResponse(userMessage);
-      setMessages(prev => [...prev, { 
-        text: botResponse, 
-        sender: 'bot' 
-      }]);
+      setIsTyping(true);
+      try {
+        const response = await geminiService.generateResponse(userMessage, messages);
+        setMessages(prev => [...prev, { 
+          text: response, 
+          sender: 'bot' 
+        }]);
+      } catch (error) {
+        console.error('Chat Error:', error);
+        setMessages(prev => [...prev, { 
+          text: 'Sorry, I encountered an error. Please try again.', 
+          sender: 'bot' 
+        }]);
+      }
+      setIsTyping(false);
     }
   };
 
@@ -109,21 +66,31 @@ export default function ChatBox({ open, onClose, nodes, edges, workflow }) {
   };
 
   return (
-    <Slide direction="up" in={open} mountOnEnter unmountOnExit>
+    <Modal
+      open={open}
+      onClose={onClose}
+      aria-labelledby="chat-modal-title"
+      disableEnforceFocus
+      disableAutoFocus
+      keepMounted
+      sx={{
+        display: 'flex',
+        alignItems: 'flex-end',
+        justifyContent: 'flex-end',
+        p: 2,
+      }}
+    >
       <Paper
         elevation={3}
         sx={{
-          position: 'fixed',
-          bottom: 20,
-          right: 20,
           width: 320,
           height: 450,
           display: 'flex',
           flexDirection: 'column',
           bgcolor: '#2a2a2a',
           color: '#fff',
-          zIndex: 1000,
           borderRadius: 2,
+          position: 'relative',
         }}
       >
         <Box
@@ -135,8 +102,13 @@ export default function ChatBox({ open, onClose, nodes, edges, workflow }) {
             justifyContent: 'space-between',
           }}
         >
-          <Typography variant="h6">Workflow Assistant</Typography>
-          <IconButton onClick={onClose} size="small" sx={{ color: '#ff6d5a' }}>
+          <Typography variant="h6" id="chat-modal-title">Chat Assistant</Typography>
+          <IconButton 
+            onClick={onClose}
+            size="small" 
+            sx={{ color: '#ff6d5a' }}
+            aria-label="close chat"
+          >
             <CloseIcon />
           </IconButton>
         </Box>
@@ -149,20 +121,9 @@ export default function ChatBox({ open, onClose, nodes, edges, workflow }) {
             display: 'flex',
             flexDirection: 'column',
             gap: 2,
-            '&::-webkit-scrollbar': {
-              width: '8px',
-            },
-            '&::-webkit-scrollbar-track': {
-              background: '#1a1a1a',
-            },
-            '&::-webkit-scrollbar-thumb': {
-              background: '#404040',
-              borderRadius: '4px',
-            },
-            '&::-webkit-scrollbar-thumb:hover': {
-              background: '#ff6d5a',
-            },
           }}
+          role="log"
+          aria-live="polite"
         >
           {messages.map((msg, index) => (
             <Box
@@ -178,15 +139,16 @@ export default function ChatBox({ open, onClose, nodes, edges, workflow }) {
                   bgcolor: msg.sender === 'user' ? '#ff6d5a' : '#404040',
                   borderRadius: msg.sender === 'user' ? '12px 12px 0 12px' : '12px 12px 12px 0',
                 }}
+                role={msg.sender === 'user' ? 'note' : 'status'}
               >
-                <Typography sx={{ color: '#fff' }}>
+                <Typography sx={{ color: '#fff', whiteSpace: 'pre-wrap' }}>
                   {msg.text}
                 </Typography>
               </Paper>
             </Box>
           ))}
           {isTyping && (
-            <Box sx={{ alignSelf: 'flex-start', pl: 1 }}>
+            <Box sx={{ alignSelf: 'flex-start', pl: 1 }} role="status" aria-label="Assistant is typing">
               <CircularProgress size={20} sx={{ color: '#ff6d5a' }} />
             </Box>
           )}
@@ -199,18 +161,24 @@ export default function ChatBox({ open, onClose, nodes, edges, workflow }) {
             borderTop: '1px solid #404040',
             bgcolor: '#2a2a2a',
           }}
+          component="form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSend();
+          }}
         >
           <TextField
             fullWidth
             variant="outlined"
             size="small"
-            placeholder="Ask about your workflow..."
+            placeholder="Type your message..."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyPress={handleKeyPress}
             disabled={isTyping}
             multiline
             maxRows={4}
+            aria-label="Chat message"
             sx={{
               '& .MuiOutlinedInput-root': {
                 color: '#fff',
@@ -225,14 +193,12 @@ export default function ChatBox({ open, onClose, nodes, edges, workflow }) {
                   borderColor: '#ff6d5a',
                 },
               },
-              '& .MuiOutlinedInput-input': {
-                color: '#fff',
-              },
             }}
           />
           <IconButton
-            onClick={handleSend}
+            type="submit"
             disabled={!message.trim() || isTyping}
+            aria-label="Send message"
             sx={{
               ml: 1,
               color: '#ff6d5a',
@@ -241,18 +207,19 @@ export default function ChatBox({ open, onClose, nodes, edges, workflow }) {
               },
             }}
           >
-            {isTyping ? <CircularProgress size={24} sx={{ color: '#ff6d5a' }} /> : <SendIcon />}
+            {isTyping ? (
+              <CircularProgress size={24} sx={{ color: '#ff6d5a' }} />
+            ) : (
+              <SendIcon />
+            )}
           </IconButton>
         </Stack>
       </Paper>
-    </Slide>
+    </Modal>
   );
 }
 
 ChatBox.propTypes = {
   open: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
-  nodes: PropTypes.array,
-  edges: PropTypes.array,
-  workflow: PropTypes.object,
 }; 
