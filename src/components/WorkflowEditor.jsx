@@ -1,7 +1,6 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import ReactFlow, {
   addEdge,
-  Background,
   Controls,
   MiniMap,
   useNodesState,
@@ -34,6 +33,7 @@ export default function WorkflowEditor() {
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [nodeCallbacks, setNodeCallbacks] = useState({});
   const nodesRef = useRef(nodes);
   const edgesRef = useRef(edges);
   const [error, setError] = useState(null);
@@ -313,55 +313,6 @@ export default function WorkflowEditor() {
     navigate('/');
   }, [navigate]);
 
-  // const runWorkflow = useCallback(async () => {
-  //   console.group('🚀 Running Workflow');
-    
-  //   try {
-  //     // Find Chat Trigger node
-  //     const chatTriggerNode = nodes.find(node => 
-  //       node.data.type === "Chat Trigger"
-  //     );
-
-  //     if (!chatTriggerNode) {
-  //       throw new Error("Chat Trigger node not found");
-  //     }
-
-  //     // Find AI Scraper node
-  //     const aiScraperNode = nodes.find(node => 
-  //       node.data.type === "AI Scraper"
-  //     );
-
-  //     if (!aiScraperNode) {
-  //       console.log("Available nodes:", nodes.map(n => ({ id: n.id, type: n.data.type })));
-  //       throw new Error("AI Scraper node not found");
-  //     }
-
-  //     // Check if they're connected
-  //     const isConnected = edges.some(edge => 
-  //       (edge.source === chatTriggerNode.id && edge.target === aiScraperNode.id) ||
-  //       (edge.source === aiScraperNode.id && edge.target === chatTriggerNode.id)
-  //     );
-
-  //     if (!isConnected) {
-  //       throw new Error("Chat Trigger and AI Scraper must be connected");
-  //     }
-
-  //     console.log("Starting workflow execution...");
-  //     console.log("Registered callbacks:", nodeCallbacks);
-
-  //     // Execute the AI Scraper
-  //     if (aiScraperNode.data.onExecute) {
-  //       await aiScraperNode.data.onExecute();
-  //     } else {
-  //       throw new Error("AI Scraper node has no execute function");
-  //     }
-
-  //   } catch (error) {
-  //     console.error('Workflow Error:', error);
-  //     setError(error.message);
-  //   }
-  //   console.groupEnd();
-  // }, [nodes, edges, nodeCallbacks]);
   const runWorkflow = useCallback(async () => {
     console.group('🚀 Running Workflow');
     
