@@ -7,8 +7,8 @@ import ReactFlow, {
   useNodesState,
   useEdgesState,
 } from 'reactflow';
-import { AppBar, Toolbar, Typography, Button, Stack, Snackbar, Alert } from '@mui/material';
-import { PlayArrow, Save, WorkspacesOutlined } from '@mui/icons-material';
+import { AppBar, Toolbar, Typography, Button, Stack, Snackbar, Alert, Fab } from '@mui/material';
+import { PlayArrow, Save, WorkspacesOutlined, Chat as ChatIcon } from '@mui/icons-material';
 // import PropTypes from 'prop-types';
 import 'reactflow/dist/style.css';
 import 'reactflow/dist/base.css';
@@ -19,6 +19,7 @@ import Sidebar from './WorkFlowSidebar';
 import { useParams, useNavigate } from 'react-router-dom';
 import CustomEdge from './CustomEdge';
 import Graph from '../utils/GraphUtils';
+import ChatBox from './ChatBox';
 
 const nodeTypes = {
   custom: CustomNode,
@@ -38,6 +39,7 @@ export default function WorkflowEditor() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const graphRef = useRef(Graph.fromEdges(initialEdges));
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   useEffect(() => {
     console.log("📡 Edges Updated: ", edges);
@@ -324,6 +326,10 @@ export default function WorkflowEditor() {
     }
   }, [nodes, edges]);
 
+  const toggleChat = useCallback(() => {
+    setIsChatOpen(prev => !prev);
+  }, []);
+
   return (
     <div style={{
       width: '100%',
@@ -432,6 +438,39 @@ export default function WorkflowEditor() {
           </ReactFlow>
         </div>
       </div>
+      <Fab
+        color="primary"
+        aria-label="chat"
+        onClick={toggleChat}
+        sx={{
+          position: 'fixed',
+          bottom: 10,
+          top: 500,
+          right: 20,
+          bgcolor: '#ff6d5a',
+          '&:hover': {
+            bgcolor: '#ff8d7a',
+          },
+          zIndex: 1000,
+        }}
+      >
+        <ChatIcon />
+      </Fab>
+      
+      <ChatBox 
+        open={isChatOpen} 
+        onClose={() => setIsChatOpen(false)}
+        nodes={nodes}
+        edges={edges}
+        workflow={{
+          id: id,
+          projectName: workflow?.projectName || 'Current Workflow',
+          lastModified: workflow?.lastModified,
+          nodes: nodes,
+          edges: edges
+        }}
+      />
+      
       <Snackbar 
         open={!!error} 
         autoHideDuration={3000} 

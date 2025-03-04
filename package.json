@@ -19,6 +19,7 @@
     "@reactflow/core": "^11.11.4",
     "@reactflow/node-resizer": "^2.2.14",
     "axios": "^1.7.9",
+    "cheerio": "^1.0.0",
     "file-saver": "^2.0.5",
     "react": "^19.0.0",
     "react-chatbot-kit": "^2.2.2",
