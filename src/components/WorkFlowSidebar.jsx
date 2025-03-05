@@ -6,7 +6,8 @@ import {
   SmartToy,
   Search,
   TableChart,
-  Chat
+  Chat,
+  Email
 } from '@mui/icons-material';
 import { useState } from 'react';
 
@@ -45,6 +46,11 @@ const nodeTypes = [
     type: 'AI Scraper', 
     icon: Search,
     description: 'Scrape and process data using AI'
+  },
+  {
+    type: 'Email',
+    icon: Email,
+    description: 'Send emails using SMTP configuration'
   }
 ];
 

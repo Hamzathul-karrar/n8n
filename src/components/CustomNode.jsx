@@ -6,6 +6,7 @@ import ChatBotNode from './nodes/ChatBotNode';
 import ChatTriggerNode from './nodes/ChatTriggerNode';
 import ExcelNode from './nodes/ExcelNode';
 import AiScraperNode from './nodes/AiScraperNode';
+import EmailNode from './nodes/EmailNode';
 import { useReactFlow } from 'reactflow';
 
 export default function CustomNode({ data, id }) {
@@ -49,6 +50,8 @@ export default function CustomNode({ data, id }) {
         return <ExcelNode data={data} id={id} />;
       case "AI Scraper":
         return <AiScraperNode data={data} id={id} />;
+      case "Email":
+        return <EmailNode data={data} id={id} />;
       default:
         return null;
     }
