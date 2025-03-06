@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Dialog, DialogTitle, DialogContent, Box, Button,Typography } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, Box, Button, Typography } from '@mui/material';
 import PropTypes from 'prop-types';
 import MonacoEditor from '@monaco-editor/react';
 import BaseNode from './BaseNode';
@@ -34,6 +34,12 @@ export default function ClickTriggerNode({ data, id }) {
   if (data && !data.onExecute) {
     data.onExecute = executeNode;
   }
+
+  // Handle Save: Store data in sessionStorage
+  const handleSave = () => {
+    sessionStorage.setItem('scheduleOutput', scheduleOutput);
+    setIsDialogOpen(false);
+  };
 
   return (
     <>
@@ -101,7 +107,7 @@ export default function ClickTriggerNode({ data, id }) {
             </Button>
             <Button
               variant="contained"
-              onClick={() => setIsDialogOpen(false)}
+              onClick={handleSave}
               sx={{
                 backgroundColor: '#ff6d5a',
                 '&:hover': { backgroundColor: '#ff8d7a' }
@@ -124,4 +130,4 @@ ClickTriggerNode.propTypes = {
     onExecute: PropTypes.func,
   }).isRequired,
   id: PropTypes.string.isRequired,
-}; 
+};
