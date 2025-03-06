@@ -7,21 +7,28 @@ import Login from "./Forms/Login";
 import SignUp from "./Forms/SignUp";
 import "./styles/global.css";
 import "./styles/dashboard.css";
+import { handleParentExpand } from "reactflow";
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(
+    sessionStorage.getItem("isAuthenticated") === "true"
+  );
 
-  useEffect(() => {
-    // Check if user is logged in (sessionStorage or localStorage)
-    const user = sessionStorage.getItem("user");
-    setIsAuthenticated(!!user);
-  }, []);
-
+  const handleLogin = () => {
+    setIsAuthenticated(true);
+    sessionStorage.setItem("isAuthenticated", "true");
+  };
+  
+  const handleLogout = () => {
+   setIsAuthenticated(false);
+   sessionStorage.removeItem("isAuthenticated");
+  };
+  
   return (
     <Router>
       <Routes>
         {/* Show Login page by default */}
-        <Route path="/login" element={<Login />} />
+        <Route path="/login" element={<Login onLogin={handleLogin} />} />
         <Route path="/signup" element={<SignUp />} />
 
         {/* Redirect to Login if not authenticated */}

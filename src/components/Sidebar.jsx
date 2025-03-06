@@ -16,6 +16,9 @@ const Sidebar = () => {
       <NavLink to="/admin" className={({ isActive }) => (isActive ? "active-link" : "")}>
         Admin
       </NavLink>
+      <NavLink to="/login" className={({ isActive }) => (isActive ? "active-link" : "")}>
+        Logout
+      </NavLink>
     </div>
   );
 };

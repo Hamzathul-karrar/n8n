@@ -23,6 +23,7 @@ export default function ClickTriggerNode({ data, id }) {
       // Validate JSON before saving
       JSON.parse(tempOutput);
       setScheduleOutput(tempOutput);
+      sessionStorage.setItem('scheduleOutput', scheduleOutput);
       setIsDialogOpen(false);
     } catch (error) {
       console.error('Invalid JSON format:', error);
@@ -52,12 +53,7 @@ export default function ClickTriggerNode({ data, id }) {
   if (data && !data.onExecute) {
     data.onExecute = executeNode;
   }
-
-  // Handle Save: Store data in sessionStorage
-  const handleSave = () => {
-    sessionStorage.setItem('scheduleOutput', scheduleOutput);
-    setIsDialogOpen(false);
-  };
+  // This handleSave is already defined above with JSON validation
 
   return (
     <>
