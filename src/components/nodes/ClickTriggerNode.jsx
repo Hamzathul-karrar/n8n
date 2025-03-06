@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Dialog, DialogTitle, DialogContent, Box, Button,Typography } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, Box, Button, Typography } from '@mui/material';
 import PropTypes from 'prop-types';
 import MonacoEditor from '@monaco-editor/react';
 import BaseNode from './BaseNode';
@@ -12,9 +12,27 @@ export default function ClickTriggerNode({ data, id }) {
     "businessType": "software+company"
   }
 ]`);
+  const [tempOutput, setTempOutput] = useState(scheduleOutput);
 
   const handleScheduleOutputChange = (value) => {
-    setScheduleOutput(value);
+    setTempOutput(value);
+  };
+
+  const handleSave = () => {
+    try {
+      // Validate JSON before saving
+      JSON.parse(tempOutput);
+      setScheduleOutput(tempOutput);
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error('Invalid JSON format:', error);
+      // You might want to show an error message to the user here
+    }
+  };
+
+  const handleCancel = () => {
+    setTempOutput(scheduleOutput); // Reset temp value
+    setIsDialogOpen(false);
   };
 
   const executeNode = async () => {
@@ -50,10 +68,19 @@ export default function ClickTriggerNode({ data, id }) {
 
       <Dialog 
         open={isDialogOpen} 
-        onClose={() => setIsDialogOpen(false)}
+        onClose={handleCancel}
         maxWidth={false}
+        keepMounted={false}
+        disablePortal={false}
         PaperProps={{
-          style: { backgroundColor: '#2a2a2a', color: '#fff', width: '40%', borderRadius: '8px', padding: '16px' }
+          style: { 
+            backgroundColor: '#2a2a2a', 
+            color: '#fff', 
+            width: '40%', 
+            borderRadius: '8px', 
+            padding: '16px'
+          },
+          elevation: 24
         }}
       >
         <DialogTitle 
@@ -74,7 +101,7 @@ export default function ClickTriggerNode({ data, id }) {
               height="400px"
               defaultLanguage="json"
               theme="vs-dark"
-              value={scheduleOutput}
+              value={tempOutput}
               onChange={handleScheduleOutputChange}
               options={{
                 minimap: { enabled: false },
@@ -83,14 +110,15 @@ export default function ClickTriggerNode({ data, id }) {
                 lineNumbers: 'on',
                 roundedSelection: false,
                 scrollBars: 'vertical',
-                automaticLayout: true
+                automaticLayout: true,
+                tabSize: 2
               }}
             />
           </Box>
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 3 }}>
             <Button
               variant="outlined"
-              onClick={() => setIsDialogOpen(false)}
+              onClick={handleCancel}
               sx={{
                 color: '#fff',
                 borderColor: '#666',
@@ -101,7 +129,7 @@ export default function ClickTriggerNode({ data, id }) {
             </Button>
             <Button
               variant="contained"
-              onClick={() => setIsDialogOpen(false)}
+              onClick={handleSave}
               sx={{
                 backgroundColor: '#ff6d5a',
                 '&:hover': { backgroundColor: '#ff8d7a' }

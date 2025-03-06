@@ -26,15 +26,15 @@ export default function AiScraperNode({ data, id }) {
       // Get chat callback if available
       const askQuestion = data.getChatCallback?.('ChatTrigger');
       
-      // Check Excel connection
-      const isConnectedToExcel = data.isExcelConnected?.();
-      console.log("Excel connection status:", isConnectedToExcel);
+      // Check node connections
+      const connection = data.checkConnections?.();
+      console.log("Node connection:", connection);
       
-      // Execute scraping through service with Excel connection status
+      // Execute scraping through service
       const scrapedData = await AiScraperService.handleNodeExecution(
         inputData, 
         askQuestion,
-        isConnectedToExcel
+        connection
       );
 
       setIsDialogOpen(false);
@@ -171,8 +171,8 @@ AiScraperNode.propTypes = {
     label: PropTypes.string.isRequired,
     type: PropTypes.string.isRequired,
     onDelete: PropTypes.func.isRequired,
-    isExcelConnected: PropTypes.func,
     registerExecute: PropTypes.func,
+    checkConnections: PropTypes.func,
     getChatCallback: PropTypes.func,
   }).isRequired,
   id: PropTypes.string.isRequired,

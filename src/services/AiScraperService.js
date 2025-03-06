@@ -70,7 +70,27 @@ export class AiScraperService {
     }
   }
 
-  static async handleNodeExecution(inputData, chatCallback, isExcelConnected) {
+  static async sendEmail(data) {
+    try {
+      const response = await fetch("http://localhost:8080/api/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to send email: ${response.status}`);
+      }
+
+      console.log("📧 Email sent successfully");
+      return true;
+    } catch (error) {
+      console.error("Email Error:", error.message);
+      throw error;
+    }
+  }
+
+  static async handleNodeExecution(inputData, chatCallback, connection) {
     try {
       let businessType, location;
 
@@ -91,12 +111,26 @@ export class AiScraperService {
         throw new Error('No valid input source found');
       }
 
+      // Execute scraping
       const scrapedData = await this.executeScraping(businessType, location);
 
-      // Check if Excel export is needed
-      if (isExcelConnected) {
-        console.log("Excel Node is connected. Storing data in Excel...");
-        await this.exportToExcel();
+      // Handle different connection types
+      if (connection) {
+        switch (connection.type) {
+          case 'excel':
+            console.log("Excel Node is connected. Storing data in Excel...");
+            await this.exportToExcel();
+            break;
+          case 'email':
+            console.log("Email Node is connected. Sending email...");
+            await this.sendEmail(scrapedData);
+            break;
+          case 'none':
+            console.log("No output node connected. Returning data directly.");
+            break;
+          default:
+            console.log("Unknown connection type:", connection.type);
+        }
       }
 
       return scrapedData;
