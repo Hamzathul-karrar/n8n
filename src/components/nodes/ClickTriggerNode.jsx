@@ -6,12 +6,12 @@ import BaseNode from './BaseNode';
 
 export default function ClickTriggerNode({ data, id }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [scheduleOutput, setScheduleOutput] = useState(`[
+  const [scheduleOutput, setScheduleOutput] = useState([
   {
     "location": "bengaluru",
     "businessType": "software+company"
   }
-]`);
+]);
 
   const handleScheduleOutputChange = (value) => {
     setScheduleOutput(value);
