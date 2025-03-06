@@ -53,6 +53,12 @@ export default function ClickTriggerNode({ data, id }) {
     data.onExecute = executeNode;
   }
 
+  // Handle Save: Store data in sessionStorage
+  const handleSave = () => {
+    sessionStorage.setItem('scheduleOutput', scheduleOutput);
+    setIsDialogOpen(false);
+  };
+
   return (
     <>
       <BaseNode 
@@ -152,4 +158,4 @@ ClickTriggerNode.propTypes = {
     onExecute: PropTypes.func,
   }).isRequired,
   id: PropTypes.string.isRequired,
-}; 
+};
