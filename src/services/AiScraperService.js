@@ -70,25 +70,25 @@ export class AiScraperService {
     }
   }
 
-  static async sendEmail(data) {
-    try {
-      const response = await fetch("http://localhost:8080/api/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      });
+  // static async sendEmail(data) {
+  //   try {
+  //     const response = await fetch("http://localhost:8080/api/send", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify(data)
+  //     });
 
-      if (!response.ok) {
-        throw new Error(`Failed to send email: ${response.status}`);
-      }
+  //     if (!response.ok) {
+  //       throw new Error(`Failed to send email: ${response.status}`);
+  //     }
 
-      console.log("📧 Email sent successfully");
-      return true;
-    } catch (error) {
-      console.error("Email Error:", error.message);
-      throw error;
-    }
-  }
+  //     console.log("📧 Email sent successfully");
+  //     return true;
+  //   } catch (error) {
+  //     console.error("Email Error:", error.message);
+  //     throw error;
+  //   }
+  // }
 
   static async handleNodeExecution(inputData, chatCallback, connection) {
     try {
@@ -103,9 +103,11 @@ export class AiScraperService {
       // Handle input from ChatTriggerNode
       else if (chatCallback) {
         businessType = await chatCallback('What type of business are you looking for?');
+        sessionStorage.setItem('businessType', businessType);
         if (!businessType) throw new Error('Business type is required');
 
         location = await chatCallback('Where would you like to search?');
+        sessionStorage.setItem('location', location);
         if (!location) throw new Error('Location is required');
       } else {
         throw new Error('No valid input source found');
@@ -122,8 +124,8 @@ export class AiScraperService {
             await this.exportToExcel();
             break;
           case 'email':
-            console.log("Email Node is connected. Sending email...");
-            await this.sendEmail(scrapedData);
+            console.log("Email Node is connected. Triggering email node...");
+            // The email node will handle its own execution through its registered onExecute function
             break;
           case 'none':
             console.log("No output node connected. Returning data directly.");
