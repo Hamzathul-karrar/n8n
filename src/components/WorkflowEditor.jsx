@@ -261,7 +261,7 @@ export default function WorkflowEditor() {
           registerExecute: (type, handler) => {
             nodeData.onExecute = handler;
           },
-          isExcelConnected: () => {
+          checkConnections: () => {
             // Use the current edges and nodes from refs
             const currentEdges = edgesRef.current;
             const currentNodes = nodesRef.current;
@@ -269,13 +269,25 @@ export default function WorkflowEditor() {
             // Find edges where this node is the source
             const nodeEdges = currentEdges.filter(edge => edge.source === newNodeId);
             
-            // Check if any of these edges connect to an Excel node
-            return nodeEdges.some(edge => 
-              currentNodes.find(n => 
-                n.id === edge.target && 
-                n.data.type === 'Microsoft Excel'
-              )
-            );
+            if (nodeEdges.length === 0) {
+              return { type: 'none' };
+            }
+
+            // Check connections
+            const connectedNode = nodeEdges.map(edge => {
+              const targetNode = currentNodes.find(n => n.id === edge.target);
+              if (!targetNode) return null;
+              
+              if (targetNode.data.type === 'Microsoft Excel') {
+                return { type: 'excel' };
+              }
+              if (targetNode.data.type === 'Email') {
+                return { type: 'email' };
+              }
+              return null;
+            })[0];
+
+            return connectedNode || { type: 'none' };
           }
         };
       }

@@ -11,10 +11,33 @@ export default function ClickTriggerNode({ data, id }) {
     "location": "bengaluru",
     "businessType": "software+company"
   }
+<<<<<<< HEAD
 ]);
+=======
+]`);
+  const [tempOutput, setTempOutput] = useState(scheduleOutput);
+>>>>>>> cd853da68666487642770413f2b92e5456a86443
 
   const handleScheduleOutputChange = (value) => {
-    setScheduleOutput(value);
+    setTempOutput(value);
+  };
+
+  const handleSave = () => {
+    try {
+      // Validate JSON before saving
+      JSON.parse(tempOutput);
+      setScheduleOutput(tempOutput);
+      sessionStorage.setItem('scheduleOutput', scheduleOutput);
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error('Invalid JSON format:', error);
+      // You might want to show an error message to the user here
+    }
+  };
+
+  const handleCancel = () => {
+    setTempOutput(scheduleOutput); // Reset temp value
+    setIsDialogOpen(false);
   };
 
   const executeNode = async () => {
@@ -34,12 +57,7 @@ export default function ClickTriggerNode({ data, id }) {
   if (data && !data.onExecute) {
     data.onExecute = executeNode;
   }
-
-  // Handle Save: Store data in sessionStorage
-  const handleSave = () => {
-    sessionStorage.setItem('scheduleOutput', scheduleOutput);
-    setIsDialogOpen(false);
-  };
+  // This handleSave is already defined above with JSON validation
 
   return (
     <>
@@ -56,10 +74,19 @@ export default function ClickTriggerNode({ data, id }) {
 
       <Dialog 
         open={isDialogOpen} 
-        onClose={() => setIsDialogOpen(false)}
+        onClose={handleCancel}
         maxWidth={false}
+        keepMounted={false}
+        disablePortal={false}
         PaperProps={{
-          style: { backgroundColor: '#2a2a2a', color: '#fff', width: '40%', borderRadius: '8px', padding: '16px' }
+          style: { 
+            backgroundColor: '#2a2a2a', 
+            color: '#fff', 
+            width: '40%', 
+            borderRadius: '8px', 
+            padding: '16px'
+          },
+          elevation: 24
         }}
       >
         <DialogTitle 
@@ -80,7 +107,7 @@ export default function ClickTriggerNode({ data, id }) {
               height="400px"
               defaultLanguage="json"
               theme="vs-dark"
-              value={scheduleOutput}
+              value={tempOutput}
               onChange={handleScheduleOutputChange}
               options={{
                 minimap: { enabled: false },
@@ -89,14 +116,15 @@ export default function ClickTriggerNode({ data, id }) {
                 lineNumbers: 'on',
                 roundedSelection: false,
                 scrollBars: 'vertical',
-                automaticLayout: true
+                automaticLayout: true,
+                tabSize: 2
               }}
             />
           </Box>
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 3 }}>
             <Button
               variant="outlined"
-              onClick={() => setIsDialogOpen(false)}
+              onClick={handleCancel}
               sx={{
                 color: '#fff',
                 borderColor: '#666',

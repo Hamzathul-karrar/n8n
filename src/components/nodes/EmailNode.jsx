@@ -2,6 +2,7 @@ import { Typography } from '@mui/material';
 import PropTypes from 'prop-types';
 import BaseNode from './BaseNode';
 import { useReactFlow } from 'reactflow';
+import axios from 'axios';
 
 export default function EmailNode({ data, id }) {
   const { getEdges, getNodes } = useReactFlow();
@@ -10,52 +11,77 @@ export default function EmailNode({ data, id }) {
     const edges = getEdges();
     const nodes = getNodes();
     
-    return edges.some(edge => {
-      const connectedNode = nodes.find(n => 
-        (edge.source === id && n.id === edge.target) || 
-        (edge.target === id && n.id === edge.source)
-      );
-      return connectedNode?.data?.type === 'Microsoft Excel' || 
-             connectedNode?.data?.type === 'AI Scraper';
+    // Check if this node is connected to AI Scraper or Excel
+    const connection = edges.find(edge => {
+      const sourceNode = nodes.find(n => n.id === edge.source);
+      return edge.target === id && 
+             (sourceNode?.data?.type === 'Microsoft Excel' || 
+              sourceNode?.data?.type === 'AI Scraper');
     });
+
+    return !!connection;
   };
 
-  const executeNode = async (inputData) => {
+  const sendDataToBackend = async (endpoint, payload) => {
     try {
-      console.log('Email Node executing with input:', inputData);
-      
-      // Check if connected to required nodes
-      if (!isConnectedToRequiredNode()) {
-        throw new Error('Email Node must be connected to either Excel Node or AI Scraper Node');
-      }
-
-      // Here you would typically make an API call to your backend to send the email
-      const emailConfig = {
-        to: inputData.to || '',
-        subject: inputData.subject || '',
-        body: inputData.body || ''
-      };
-
-      console.log('Sending email with config:', emailConfig);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      return {
-        success: true,
-        message: 'Email sent successfully',
-        timestamp: new Date().toISOString(),
-        config: emailConfig
-      };
+      const response = await axios.post(`http://localhost:8080/api/${endpoint}`, payload);
+      console.log(`Data sent to ${endpoint}:`, response.data);
+      return response.data;
     } catch (error) {
-      console.error('Email Node Error:', error);
-      throw new Error(`Failed to send email: ${error.message}`);
+      console.error(`Error sending data to ${endpoint}:`, error);
+      throw error;
     }
   };
 
-  // Attach the execute function to the node's data
-  if (data && !data.onExecute) {
-    data.onExecute = executeNode;
+  const handleEmailSend = async () => {
+    try {
+      console.log("Email node executing...");
+      const username = sessionStorage.getItem('username');
+      const password = sessionStorage.getItem('password');
+      const jobType = sessionStorage.getItem('businessType');
+
+      if (!username || !password) {
+        console.error('User not logged in');
+        throw new Error('User not logged in');
+      }
+
+      if (!jobType) {
+        console.error('No business type found');
+        throw new Error('No business type found');
+      }
+
+      const userResponse = await axios.get(
+        `http://localhost:8080/api/getUser?username=${username}&password=${password}`
+      );
+
+      if (!userResponse.data) {
+        throw new Error('User data not found');
+      }
+
+      const { name: senderName, companyName, companyDescription, contactInfo } = userResponse.data;
+      const payload = {
+        subject: "Business Email",
+        jobtype: jobType,
+        senderName: senderName,
+        companyName: companyName,
+        serviceDetails: companyDescription,
+        contact: contactInfo,
+      };
+
+      await sendDataToBackend("send", payload);
+      console.log('Email sent successfully:', payload);
+      return { status: 'success', message: 'Email sent successfully' };
+
+    } catch (error) {
+      console.error('Error in email process:', error);
+      throw error;
+    }
+  };
+
+  // Register execute function if connected to required node
+  if (data && !data.onExecute && isConnectedToRequiredNode()) {
+    console.log("Registering email execute function");
+    data.onExecute = handleEmailSend;
   }
 
   const isConnected = isConnectedToRequiredNode();
