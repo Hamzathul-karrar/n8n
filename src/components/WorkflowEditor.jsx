@@ -274,20 +274,24 @@ export default function WorkflowEditor() {
             }
 
             // Check connections
-            const connectedNode = nodeEdges.map(edge => {
+            for (const edge of nodeEdges) {
               const targetNode = currentNodes.find(n => n.id === edge.target);
-              if (!targetNode) return null;
+              if (!targetNode) continue;
               
               if (targetNode.data.type === 'Microsoft Excel') {
                 return { type: 'excel' };
               }
               if (targetNode.data.type === 'Email') {
-                return { type: 'email' };
+                // Get the email node's execute function
+                const emailNode = currentNodes.find(n => n.id === edge.target);
+                return { 
+                  type: 'email',
+                  emailHandler: emailNode?.data?.onExecute
+                };
               }
-              return null;
-            })[0];
+            }
 
-            return connectedNode || { type: 'none' };
+            return { type: 'none' };
           }
         };
       }

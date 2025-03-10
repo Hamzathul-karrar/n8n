@@ -1,3 +1,5 @@
+import { handleEmailSend } from './emailService';
+
 export class AiScraperService {
   static async executeScraping(businessType, location) {
     try {
@@ -70,26 +72,6 @@ export class AiScraperService {
     }
   }
 
-  // static async sendEmail(data) {
-  //   try {
-  //     const response = await fetch("http://localhost:8080/api/send", {
-  //       method: "POST",
-  //       headers: { "Content-Type": "application/json" },
-  //       body: JSON.stringify(data)
-  //     });
-
-  //     if (!response.ok) {
-  //       throw new Error(`Failed to send email: ${response.status}`);
-  //     }
-
-  //     console.log("📧 Email sent successfully");
-  //     return true;
-  //   } catch (error) {
-  //     console.error("Email Error:", error.message);
-  //     throw error;
-  //   }
-  // }
-
   static async handleNodeExecution(inputData, chatCallback, connection) {
     try {
       let businessType, location;
@@ -125,7 +107,7 @@ export class AiScraperService {
             break;
           case 'email':
             console.log("Email Node is connected. Triggering email node...");
-            // The email node will handle its own execution through its registered onExecute function
+            await handleEmailSend();
             break;
           case 'none':
             console.log("No output node connected. Returning data directly.");

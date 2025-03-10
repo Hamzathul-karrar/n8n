@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import BaseNode from './BaseNode';
 import { useReactFlow } from 'reactflow';
 import axios from 'axios';
+import { useEffect } from 'react';
 
 export default function EmailNode({ data, id }) {
   const { getEdges, getNodes } = useReactFlow();
@@ -19,70 +20,20 @@ export default function EmailNode({ data, id }) {
               sourceNode?.data?.type === 'AI Scraper');
     });
 
-    return !!connection;
-  };
-
-  const sendDataToBackend = async (endpoint, payload) => {
-    try {
-      const response = await axios.post(`http://localhost:8080/api/${endpoint}`, payload);
-      console.log(`Data sent to ${endpoint}:`, response.data);
-      return response.data;
-    } catch (error) {
-      console.error(`Error sending data to ${endpoint}:`, error);
-      throw error;
+    if(connection){
+      const sourceNode = nodes.find(n => n.id === connection.source);
+      return sourceNode?.data;
     }
+    return null;
   };
 
-  const handleEmailSend = async () => {
-    try {
-      console.log("Email node executing...");
-      const username = sessionStorage.getItem('username');
-      const password = sessionStorage.getItem('password');
-      const jobType = sessionStorage.getItem('businessType');
-
-      if (!username || !password) {
-        console.error('User not logged in');
-        throw new Error('User not logged in');
-      }
-
-      if (!jobType) {
-        console.error('No business type found');
-        throw new Error('No business type found');
-      }
-
-      const userResponse = await axios.get(
-        `http://localhost:8080/api/getUser?username=${username}&password=${password}`
-      );
-
-      if (!userResponse.data) {
-        throw new Error('User data not found');
-      }
-
-      const { name: senderName, companyName, companyDescription, contactInfo } = userResponse.data;
-      const payload = {
-        subject: "Business Email",
-        jobtype: jobType,
-        senderName: senderName,
-        companyName: companyName,
-        serviceDetails: companyDescription,
-        contact: contactInfo,
-      };
-
-      await sendDataToBackend("send", payload);
-      console.log('Email sent successfully:', payload);
-      return { status: 'success', message: 'Email sent successfully' };
-
-    } catch (error) {
-      console.error('Error in email process:', error);
-      throw error;
+  // Register execute function immediately
+  useEffect(() => {
+    if (data && !data.onExecute) {
+      console.log("Registering email execute function");
+      data.onExecute = handleEmailSend;
     }
-  };
-
-  // Register execute function if connected to required node
-  if (data && !data.onExecute && isConnectedToRequiredNode()) {
-    console.log("Registering email execute function");
-    data.onExecute = handleEmailSend;
-  }
+  }, [data]);
 
   const isConnected = isConnectedToRequiredNode();
 
